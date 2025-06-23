@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity } from 'react-native';
+import { View,Image, Text, TextInput, TouchableOpacity } from 'react-native';
 import { Colors, Fonts } from '../../Color/Color';
 import { useRouter } from 'expo-router';
 
@@ -12,6 +12,11 @@ export default function Signin() {
 
   return (
     <View className="flex-1 justify-center px-6" style={{ backgroundColor: theme.background }}>
+      <Image
+        source={require('../../assets/logo.png')}
+        style={{ width: 240, height: 240, marginBottom: 24, marginLeft:30 }}
+        resizeMode="contain"
+      />
       <Text className="text-2xl mb-6 text-center" style={{ color: theme.textDark, fontFamily: Fonts.heading }}>
         Sign In to HomeEase
       </Text>
