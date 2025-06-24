@@ -6,11 +6,16 @@ import {
   TouchableOpacity,
   Platform,
   ScrollView,
-  Image
+  Image,
+  Alert,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
+import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
+
+
+const API_URL = 'http://192.168.216.105:5000/api/auth/signup';
 
 export default function Signup() {
   const router = useRouter();
@@ -28,9 +33,41 @@ export default function Signup() {
   const [city, setCity] = useState('');
   const [pricing, setPricing] = useState('');
 
-  const handleSignup = () => {
-    // For now just route to home (later integrate Firebase/API)
-    router.push('/home');
+  const handleSignup = async () => {
+    try {
+      const userData = {
+        name,
+        email,
+        password,
+        role,
+        address,
+        profession,
+        experience,
+        city,
+        pricing,
+      };
+
+      // Remove provider fields if customer
+      if (role === 'customer') {
+        delete userData.profession;
+        delete userData.experience;
+        delete userData.city;
+        delete userData.pricing;
+      }
+
+      const response = await axios.post(API_URL, userData);
+
+      if (response.status === 201) {
+        Alert.alert('Success', 'Signup successful!');
+        router.replace('/(auth)/signin'); 
+      }
+       else {
+        Alert.alert('Error', 'Unexpected response');
+      }
+    } catch (err) {
+      console.log(err.response?.data || err.message);
+      Alert.alert('Error', err.response?.data?.message || 'Signup failed');
+    }
   };
 
   return (
@@ -41,9 +78,10 @@ export default function Signup() {
     >
       <Image
         source={require('../../assets/logo.png')}
-        style={{ width: 240, height: 240, marginBottom: 24, marginLeft:30 }}
+        style={{ width: 240, height: 240, marginBottom: 24, marginLeft: 30 }}
         resizeMode="contain"
       />
+
       <Text
         className="text-2xl mb-6 text-center"
         style={{ color: theme.textDark, fontFamily: Fonts.heading }}
@@ -109,7 +147,13 @@ export default function Signup() {
       />
 
       {/* Role Dropdown */}
-      <Text style={{ color: theme.textLight, fontFamily: Fonts.caption, marginBottom: 6 }}>
+      <Text
+        style={{
+          color: theme.textLight,
+          fontFamily: Fonts.caption,
+          marginBottom: 6,
+        }}
+      >
         Select Role
       </Text>
       <View
@@ -132,32 +176,31 @@ export default function Signup() {
         </Picker>
       </View>
 
-      {/* Role-specific fields */}
+      {/* Customer Address Field */}
       {role === 'customer' && (
-        <>
-          <TextInput
-            placeholder="Address"
-            placeholderTextColor={theme.textLight}
-            value={address}
-            onChangeText={setAddress}
-            style={{
-              backgroundColor: theme.card,
-              color: theme.textDark,
-              fontFamily: Fonts.body,
-              borderWidth: 1,
-              borderColor: theme.border,
-              borderRadius: 8,
-              padding: 12,
-              marginBottom: 16,
-            }}
-          />
-        </>
+        <TextInput
+          placeholder="Address"
+          placeholderTextColor={theme.textLight}
+          value={address}
+          onChangeText={setAddress}
+          style={{
+            backgroundColor: theme.card,
+            color: theme.textDark,
+            fontFamily: Fonts.body,
+            borderWidth: 1,
+            borderColor: theme.border,
+            borderRadius: 8,
+            padding: 12,
+            marginBottom: 16,
+          }}
+        />
       )}
 
+      {/* Provider Fields */}
       {role === 'provider' && (
         <>
           <TextInput
-            placeholder="Profession (e.g., Plumber, Electrician)"
+            placeholder="Profession (e.g., Plumber)"
             placeholderTextColor={theme.textLight}
             value={profession}
             onChangeText={setProfession}
@@ -237,16 +280,28 @@ export default function Signup() {
           paddingVertical: 14,
         }}
       >
-        <Text className="text-center text-lg" style={{ color: '#fff', fontFamily: Fonts.body }}>
+        <Text
+          className="text-center text-lg"
+          style={{ color: '#fff', fontFamily: Fonts.body }}
+        >
           Sign Up
         </Text>
       </TouchableOpacity>
 
       {/* Switch to Sign In */}
-      <Text className="text-center mt-4" style={{ color: theme.textLight, fontFamily: Fonts.caption }}>
-        Already have an account?
-        <Text onPress={() => router.push('/signin')} style={{ color: theme.accent }}> Sign In</Text>
-      </Text>
+      <Text
+  className="text-center mt-4"
+  style={{ color: theme.textLight, fontFamily: Fonts.caption }}
+>
+  Already have an account?
+  <Text
+    onPress={() => router.push('/(auth)/signin')} 
+    style={{ color: theme.accent }}
+  >
+    {' '}Sign In
+  </Text>
+</Text>
+
     </ScrollView>
   );
 }
