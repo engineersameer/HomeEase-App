@@ -15,6 +15,7 @@ app.use('/api/customer', require('./routes/customerRoutes'));
 app.use('/api/provider', require('./routes/providerRoutes'));
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Server accessible at: http://192.168.10.15:${PORT}`);
 });

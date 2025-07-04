@@ -13,7 +13,7 @@ export default function ProviderHome() {
   const fetchProviderDashboard = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-      const res = await axios.get('http://192.168.100.5:5000/api/provider/dashboard', {
+      const res = await axios.get('http://192.168.10.15:5000/api/provider/dashboard', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
