@@ -13,13 +13,15 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
+import { useTheme } from '../../context/ThemeContext';
+import Footer from '../shared/Footer';
+import FloatingInput from '../shared/FloatingInput';
 
-const API_URL = 'http://192.168.10.15:5000/api/auth/profile';
+const API_URL = 'http://192.168.10.16:5000/api/auth/profile';
 
 export default function CustomerProfile() {
   const router = useRouter();
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const theme = isDarkMode ? Colors.dark : Colors.light;
+  const { theme, isDarkMode, toggleTheme } = useTheme();
 
   // Profile state
   const [name, setName] = useState('');
@@ -38,27 +40,7 @@ export default function CustomerProfile() {
 
   useEffect(() => {
     fetchProfile();
-    loadThemePreference();
   }, []);
-
-  const loadThemePreference = async () => {
-    try {
-      const savedTheme = await AsyncStorage.getItem('theme');
-      setIsDarkMode(savedTheme === 'dark');
-    } catch (error) {
-      console.log('Error loading theme preference:', error);
-    }
-  };
-
-  const toggleTheme = async () => {
-    const newTheme = !isDarkMode;
-    setIsDarkMode(newTheme);
-    try {
-      await AsyncStorage.setItem('theme', newTheme ? 'dark' : 'light');
-    } catch (error) {
-      console.log('Error saving theme preference:', error);
-    }
-  };
 
   const fetchProfile = async () => {
     try {
@@ -127,333 +109,97 @@ export default function CustomerProfile() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: theme.background }}>
-      {/* Header */}
-      <View style={{ 
-        backgroundColor: theme.primary, 
-        paddingTop: 60,
-        paddingBottom: 20,
-        paddingHorizontal: 20,
-        borderBottomLeftRadius: 20,
-        borderBottomRightRadius: 20
-      }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={{ 
-            fontSize: 24, 
-            fontWeight: 'bold', 
-            color: '#fff',
-            fontFamily: Fonts.heading
-          }}>
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
+      <ScrollView style={{ flex: 1, backgroundColor: theme.background }}>
+        {/* Header */}
+        <View style={{
+          backgroundColor: theme.card,
+          paddingTop: 20,
+          paddingBottom: 16,
+          paddingHorizontal: 24,
+          borderBottomWidth: 1,
+          borderBottomColor: theme.border,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.textDark, fontFamily: Fonts.heading }}>
             Profile
           </Text>
-          <TouchableOpacity onPress={toggleTheme}>
-            <Text style={{ fontSize: 24, color: '#fff' }}>
-              {isDarkMode ? '☀️' : '🌙'}
-            </Text>
-          </TouchableOpacity>
         </View>
-      </View>
-
-      <View style={{ padding: 20 }}>
-        {/* Profile Image Section */}
-        <View style={{ alignItems: 'center', marginBottom: 30 }}>
-          <View style={{
-            width: 120,
-            height: 120,
-            borderRadius: 60,
-            backgroundColor: theme.card,
-            justifyContent: 'center',
-            alignItems: 'center',
-            borderWidth: 3,
-            borderColor: theme.primary,
-            marginBottom: 15
-          }}>
-            {profileImage ? (
-              <Image
-                source={{ uri: profileImage }}
-                style={{ width: 114, height: 114, borderRadius: 57 }}
-              />
-            ) : (
-              <Text style={{ fontSize: 48, color: theme.textLight }}>👤</Text>
-            )}
-          </View>
-          <TouchableOpacity style={{
-            backgroundColor: theme.accent,
-            paddingHorizontal: 20,
-            paddingVertical: 8,
-            borderRadius: 20
-          }}>
-            <Text style={{ color: '#fff', fontFamily: Fonts.body }}>Change Photo</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Profile Form */}
-        <View style={{ marginBottom: 20 }}>
-          <Text style={{ 
-            fontSize: 18, 
-            fontWeight: 'bold', 
-            color: theme.textDark,
-            fontFamily: Fonts.subheading,
-            marginBottom: 15
-          }}>
-            Personal Information
-          </Text>
-
-          {/* Name */}
-          <Text style={{ color: theme.textLight, fontFamily: Fonts.caption, marginBottom: 5 }}>
-            Full Name
-          </Text>
-          <TextInput
-            value={name}
-            onChangeText={setName}
-            editable={isEditing}
-            style={{
-              backgroundColor: theme.card,
-              borderWidth: 1,
-              borderColor: theme.border,
-              borderRadius: 12,
-              padding: 15,
-              marginBottom: 15,
-              color: theme.textDark,
-              fontFamily: Fonts.body,
-              fontSize: 16
-            }}
-          />
-
-          {/* Email */}
-          <Text style={{ color: theme.textLight, fontFamily: Fonts.caption, marginBottom: 5 }}>
-            Email Address
-          </Text>
-          <TextInput
-            value={email}
-            editable={false}
-            style={{
+        <View style={{ padding: 24 }}>
+          {/* Profile Image Section */}
+          <View style={{ alignItems: 'center', marginBottom: 30 }}>
+            <View style={{
+              width: 100,
+              height: 100,
+              borderRadius: 50,
               backgroundColor: theme.background,
-              borderWidth: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+              borderWidth: 2,
               borderColor: theme.border,
-              borderRadius: 12,
-              padding: 15,
-              marginBottom: 15,
-              color: theme.textLight,
-              fontFamily: Fonts.body,
-              fontSize: 16
-            }}
-          />
-
-          {/* Phone */}
-          <Text style={{ color: theme.textLight, fontFamily: Fonts.caption, marginBottom: 5 }}>
-            Phone Number
-          </Text>
-          <TextInput
-            value={phone}
-            onChangeText={setPhone}
-            editable={isEditing}
-            keyboardType="phone-pad"
-            style={{
-              backgroundColor: theme.card,
-              borderWidth: 1,
-              borderColor: theme.border,
-              borderRadius: 12,
-              padding: 15,
-              marginBottom: 15,
-              color: theme.textDark,
-              fontFamily: Fonts.body,
-              fontSize: 16
-            }}
-          />
-
-          {/* Address */}
-          <Text style={{ color: theme.textLight, fontFamily: Fonts.caption, marginBottom: 5 }}>
-            Address
-          </Text>
-          <TextInput
-            value={address}
-            onChangeText={setAddress}
-            editable={isEditing}
-            multiline
-            numberOfLines={3}
-            style={{
-              backgroundColor: theme.card,
-              borderWidth: 1,
-              borderColor: theme.border,
-              borderRadius: 12,
-              padding: 15,
-              marginBottom: 15,
-              color: theme.textDark,
-              fontFamily: Fonts.body,
-              fontSize: 16,
-              minHeight: 80
-            }}
-          />
-
-          {/* City */}
-          <Text style={{ color: theme.textLight, fontFamily: Fonts.caption, marginBottom: 5 }}>
-            City
-          </Text>
-          <TextInput
-            value={city}
-            onChangeText={setCity}
-            editable={isEditing}
-            style={{
-              backgroundColor: theme.card,
-              borderWidth: 1,
-              borderColor: theme.border,
-              borderRadius: 12,
-              padding: 15,
-              marginBottom: 15,
-              color: theme.textDark,
-              fontFamily: Fonts.body,
-              fontSize: 16
-            }}
-          />
-        </View>
-
-        {/* Action Buttons */}
-        <View style={{ marginBottom: 30 }}>
-          {isEditing ? (
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity
-                onPress={() => setIsEditing(false)}
-                style={{
-                  flex: 1,
-                  backgroundColor: theme.background,
-                  borderWidth: 2,
-                  borderColor: theme.border,
-                  paddingVertical: 15,
-                  borderRadius: 12,
-                  alignItems: 'center'
-                }}
-              >
-                <Text style={{ 
-                  color: theme.textDark, 
-                  fontFamily: Fonts.body,
-                  fontWeight: '600'
-                }}>
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleUpdateProfile}
-                style={{
-                  flex: 1,
-                  backgroundColor: theme.primary,
-                  paddingVertical: 15,
-                  borderRadius: 12,
-                  alignItems: 'center'
-                }}
-              >
-                <Text style={{ 
-                  color: '#fff', 
-                  fontFamily: Fonts.body,
-                  fontWeight: '600'
-                }}>
-                  Save Changes
-                </Text>
-              </TouchableOpacity>
+              marginBottom: 15
+            }}>
+              {profileImage ? (
+                <Image
+                  source={{ uri: profileImage }}
+                  style={{ width: 96, height: 96, borderRadius: 48 }}
+                />
+              ) : (
+                <Text style={{ fontSize: 40, color: theme.textLight }}>👤</Text>
+              )}
             </View>
-          ) : (
-            <TouchableOpacity
-              onPress={() => setIsEditing(true)}
-              style={{
-                backgroundColor: theme.accent,
-                paddingVertical: 15,
-                borderRadius: 12,
-                alignItems: 'center'
-              }}
-            >
-              <Text style={{ 
-                color: '#fff', 
-                fontFamily: Fonts.body,
-                fontWeight: '600'
-              }}>
-                Edit Profile
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Settings Section */}
-        <View style={{ marginBottom: 30 }}>
-          <Text style={{ 
-            fontSize: 18, 
-            fontWeight: 'bold', 
-            color: theme.textDark,
-            fontFamily: Fonts.subheading,
-            marginBottom: 15
-          }}>
-            Settings
-          </Text>
-
-          {/* Theme Toggle */}
-          <View style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            backgroundColor: theme.card,
-            padding: 15,
-            borderRadius: 12,
-            marginBottom: 10
-          }}>
-            <Text style={{ 
-              color: theme.textDark, 
-              fontFamily: Fonts.body,
-              fontSize: 16
-            }}>
-              Dark Mode
-            </Text>
-            <Switch
-              value={isDarkMode}
-              onValueChange={toggleTheme}
-              trackColor={{ false: theme.border, true: theme.primary }}
-              thumbColor={isDarkMode ? '#fff' : theme.textLight}
-            />
           </View>
-
-          {/* Notifications */}
-          <View style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            backgroundColor: theme.card,
-            padding: 15,
-            borderRadius: 12,
-            marginBottom: 10
-          }}>
-            <Text style={{ 
-              color: theme.textDark, 
-              fontFamily: Fonts.body,
-              fontSize: 16
+          {/* Profile Form */}
+          <View style={{ marginBottom: 20 }}>
+            <Text style={{
+              fontSize: 16,
+              fontWeight: 'bold',
+              color: theme.textDark,
+              fontFamily: Fonts.subheading,
+              marginBottom: 15
             }}>
-              Push Notifications
+              Personal Information
             </Text>
-            <Switch
-              value={true}
-              onValueChange={() => {}}
-              trackColor={{ false: theme.border, true: theme.primary }}
-              thumbColor={'#fff'}
-            />
+            <FloatingInput label="Name" value={name} onChangeText={setName} theme={theme} />
+            <FloatingInput label="Email" value={email} onChangeText={setEmail} editable={false} theme={theme} />
+            <FloatingInput label="Phone" value={phone} onChangeText={setPhone} theme={theme} />
+            <FloatingInput label="Address" value={address} onChangeText={setAddress} theme={theme} />
+            <FloatingInput label="City" value={city} onChangeText={setCity} theme={theme} />
           </View>
+          <TouchableOpacity
+            onPress={handleUpdateProfile}
+            style={{
+              backgroundColor: theme.primary,
+              borderRadius: 12,
+              paddingVertical: 14,
+              alignItems: 'center',
+              marginBottom: 16,
+            }}
+          >
+            <Text style={{ fontSize: 16, color: '#fff', fontFamily: Fonts.subheading }}>
+              Update Profile
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleLogout}
+            style={{
+              backgroundColor: theme.card,
+              borderRadius: 12,
+              paddingVertical: 14,
+              alignItems: 'center',
+              borderWidth: 1,
+              borderColor: theme.border,
+            }}
+          >
+            <Text style={{ fontSize: 16, color: theme.textDark, fontFamily: Fonts.subheading }}>
+              Logout
+            </Text>
+          </TouchableOpacity>
         </View>
-
-        {/* Logout Button */}
-        <TouchableOpacity
-          onPress={handleLogout}
-          style={{
-            backgroundColor: theme.error,
-            paddingVertical: 15,
-            borderRadius: 12,
-            alignItems: 'center'
-          }}
-        >
-          <Text style={{ 
-            color: '#fff', 
-            fontFamily: Fonts.body,
-            fontWeight: '600'
-          }}>
-            Logout
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+      </ScrollView>
+      <Footer theme={theme} router={router} current="profile" />
+    </View>
   );
 } 

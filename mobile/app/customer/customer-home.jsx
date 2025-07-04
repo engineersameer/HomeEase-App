@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  RefreshControl,
   Alert,
   StatusBar,
   Image,
@@ -12,10 +11,12 @@ import {
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, Fonts } from '../../Color/Color';
+import { useTheme } from '../../context/ThemeContext';
+import Footer from '../shared/Footer';
 
 export default function CustomerHome() {
   const router = useRouter();
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const { theme, isDarkMode, toggleTheme } = useTheme();
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState({
     totalBookings: 0,
@@ -25,31 +26,10 @@ export default function CustomerHome() {
   });
   const [recentBookings, setRecentBookings] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
-  const theme = isDarkMode ? Colors.dark : Colors.light;
 
   useEffect(() => {
     loadUserData();
-    loadThemePreference();
   }, []);
-
-  const loadThemePreference = async () => {
-    try {
-      const savedTheme = await AsyncStorage.getItem('theme');
-      setIsDarkMode(savedTheme === 'dark');
-    } catch (error) {
-      console.log('Error loading theme preference:', error);
-    }
-  };
-
-  const toggleTheme = async () => {
-    const newTheme = !isDarkMode;
-    setIsDarkMode(newTheme);
-    try {
-      await AsyncStorage.setItem('theme', newTheme ? 'dark' : 'light');
-    } catch (error) {
-      console.log('Error saving theme preference:', error);
-    }
-  };
 
   const loadUserData = async () => {
     try {
@@ -162,7 +142,7 @@ export default function CustomerHome() {
       {/* Header */}
       <View style={{
         backgroundColor: theme.card,
-        paddingTop: 50,
+        paddingTop: 20,
         paddingBottom: 16,
         paddingHorizontal: 24,
         borderBottomWidth: 1,
@@ -199,24 +179,24 @@ export default function CustomerHome() {
             </Text>
           </View>
         </View>
-        
-        <TouchableOpacity onPress={toggleTheme} style={{
-          padding: 8,
-          borderRadius: 8,
-          backgroundColor: theme.background,
-        }}>
-          <Text style={{ fontSize: 20 }}>
-            {isDarkMode ? '☀️' : '🌙'}
-          </Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          {/* Minimalist Refresh Button */}
+          <TouchableOpacity onPress={onRefresh} style={{ padding: 8, marginRight: 8 }}>
+            <Text style={{ fontSize: 20, color: theme.textDark }}>⟳</Text>
+          </TouchableOpacity>
+          {/* Minimalist Dark Mode Toggle */}
+          <TouchableOpacity onPress={toggleTheme} style={{ padding: 8 }}>
+            <Text style={{ fontSize: 20, color: theme.textDark }}>
+              {isDarkMode ? '☀️' : '🌙'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 100 }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
       >
         {/* Dashboard Stats */}
         <View style={{
@@ -609,6 +589,8 @@ export default function CustomerHome() {
           )}
         </View>
       </ScrollView>
+      {/* Minimalist Footer */}
+      <Footer theme={theme} router={router} current="home" />
     </View>
   );
 }

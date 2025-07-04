@@ -12,14 +12,15 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
+import Footer from '../shared/Footer';
+import { useTheme } from '../../context/ThemeContext';
 
-const API_URL = 'http://192.168.10.15:5000/api/customer/reviews';
+const API_URL = 'http://192.168.10.16:5000/api/customer/reviews';
 
 export default function ReviewBooking() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const theme = isDarkMode ? Colors.dark : Colors.light;
+  const { theme } = useTheme();
 
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
@@ -27,18 +28,8 @@ export default function ReviewBooking() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadThemePreference();
     fetchBookingDetails();
   }, []);
-
-  const loadThemePreference = async () => {
-    try {
-      const savedTheme = await AsyncStorage.getItem('theme');
-      setIsDarkMode(savedTheme === 'dark');
-    } catch (error) {
-      console.log('Error loading theme preference:', error);
-    }
-  };
 
   const fetchBookingDetails = async () => {
     try {
@@ -317,6 +308,7 @@ export default function ReviewBooking() {
 
         <View style={{ height: 20 }} />
       </ScrollView>
+      <Footer theme={theme} router={router} current="orders" />
     </View>
   );
 } 

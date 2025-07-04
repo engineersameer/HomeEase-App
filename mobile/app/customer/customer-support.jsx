@@ -11,11 +11,12 @@ import {
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, Fonts } from '../../Color/Color';
+import Footer from '../shared/Footer';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function CustomerSupport() {
   const router = useRouter();
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const theme = isDarkMode ? Colors.dark : Colors.light;
+  const { theme } = useTheme();
 
   const [expandedFAQ, setExpandedFAQ] = useState(null);
 
@@ -250,8 +251,8 @@ export default function CustomerSupport() {
     <View style={{ flex: 1, backgroundColor: theme.background }}>
       {/* Header */}
       <View style={{
-        backgroundColor: theme.primary,
-        paddingTop: 60,
+        backgroundColor: theme.card,
+        paddingTop: 20,
         paddingBottom: 20,
         paddingHorizontal: 20
       }}>
@@ -259,13 +260,13 @@ export default function CustomerSupport() {
           <Text style={{
             fontSize: 24,
             fontWeight: 'bold',
-            color: '#fff',
+            color: theme.textDark,
             fontFamily: Fonts.heading
           }}>
             Support & Help
           </Text>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={{ fontSize: 24, color: '#fff' }}>✕</Text>
+            <Text style={{ fontSize: 24, color: theme.textDark }}>✕</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -358,6 +359,7 @@ export default function CustomerSupport() {
 
         <View style={{ height: 20 }} />
       </ScrollView>
+      <Footer theme={theme} router={router} current="home" />
     </View>
   );
 } 
