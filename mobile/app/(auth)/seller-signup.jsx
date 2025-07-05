@@ -8,13 +8,16 @@ import {
   Image,
   Alert,
   StatusBar,
+  RefreshControl,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
 import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
+import FloatingInput from '../shared/FloatingInput';
+import Button from '../shared/Button';
 
-const API_URL = 'http://192.168.10.15:5000/api/auth/signup';
+const API_URL = 'http://192.168.10.16:5000/api/auth/signup';
 
 export default function SellerSignup() {
   const router = useRouter();
@@ -113,362 +116,83 @@ export default function SellerSignup() {
       >
         {/* Header */}
         <View style={{
-          paddingTop: 80,
-          paddingBottom: 40,
-          paddingHorizontal: 24,
+          paddingTop: 100,
+          paddingBottom: 10,
           alignItems: 'center',
         }}>
           <Image
             source={require('../../assets/logo.png')}
             style={{ 
-              width: 80, 
-              height: 80, 
-              marginBottom: 24,
+              width: 400, 
+              height: 400, 
+              marginBottom: 10,
+              borderRadius: 200,
             }}
             resizeMode="contain"
           />
           <Text style={{ 
-            fontSize: 24,
-            fontWeight: '600',
+            fontSize: 28,
+            fontWeight: '400',
             color: theme.textDark,
             fontFamily: Fonts.heading,
-            marginBottom: 8,
+            textAlign: 'center',
+            marginBottom: 10,
+            letterSpacing: -0.5,
           }}>
             Become a Seller
           </Text>
           <Text style={{ 
-            fontSize: 16,
+            fontSize: 15,
             color: theme.textLight,
             fontFamily: Fonts.body,
             textAlign: 'center',
+            lineHeight: 22,
+            maxWidth: 280,
+            fontWeight: '300',
           }}>
             Join our platform and start offering your services
           </Text>
         </View>
 
-        {/* Form */}
-        <View style={{ paddingHorizontal: 24, flex: 1 }}>
-          {/* Personal Information */}
-          <Text style={{ 
-            fontSize: 18,
-            fontWeight: '600',
-            color: theme.textDark,
-            fontFamily: Fonts.subheading,
-            marginBottom: 16,
-          }}>
-            Personal Information
-          </Text>
+        {/* Minimal Form Area */}
+        <View style={{
+          padding: 0,
+          marginHorizontal: 32,
+          marginBottom: 32,
+          backgroundColor: 'transparent',
+        }}>
+          <FloatingInput label="Full Name" value={name} onChangeText={setName} />
+          <FloatingInput label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+          <FloatingInput label="Password (min 6 characters)" value={password} onChangeText={setPassword} secureTextEntry />
+          <FloatingInput label="Confirm Password" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry />
+          <FloatingInput label="Profession" value={profession} onChangeText={setProfession} />
+          <FloatingInput label="Experience (years)" value={experience} onChangeText={setExperience} keyboardType="numeric" />
+          <FloatingInput label="Pricing (PKR)" value={pricing} onChangeText={setPricing} keyboardType="numeric" />
+          <FloatingInput label="Certifications" value={certifications} onChangeText={setCertifications} />
+          <FloatingInput label="CNIC" value={cnic} onChangeText={setCnic} />
+          <FloatingInput label="City" value={city} onChangeText={setCity} />
+          <FloatingInput label="Availability" value={availability} onChangeText={setAvailability} />
+          <FloatingInput label="Bio" value={bio} onChangeText={setBio} />
+        </View>
 
-          {/* Name */}
-          <View style={{ marginBottom: 16 }}>
-            <TextInput
-              placeholder="Full Name"
-              placeholderTextColor={theme.textLight}
-              value={name}
-              onChangeText={setName}
-              style={{
-                backgroundColor: theme.card,
-                color: theme.textDark,
-                fontFamily: Fonts.body,
-                borderWidth: 1,
-                borderColor: theme.border,
-                borderRadius: 12,
-                padding: 16,
-                fontSize: 16,
-              }}
-            />
-          </View>
-
-          {/* Email */}
-          <View style={{ marginBottom: 16 }}>
-            <TextInput
-              placeholder="Email"
-              placeholderTextColor={theme.textLight}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              style={{
-                backgroundColor: theme.card,
-                color: theme.textDark,
-                fontFamily: Fonts.body,
-                borderWidth: 1,
-                borderColor: theme.border,
-                borderRadius: 12,
-                padding: 16,
-                fontSize: 16,
-              }}
-            />
-          </View>
-
-          {/* Password */}
-          <View style={{ marginBottom: 16 }}>
-            <TextInput
-              placeholder="Password (min 6 characters)"
-              placeholderTextColor={theme.textLight}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              style={{
-                backgroundColor: theme.card,
-                color: theme.textDark,
-                fontFamily: Fonts.body,
-                borderWidth: 1,
-                borderColor: theme.border,
-                borderRadius: 12,
-                padding: 16,
-                fontSize: 16,
-              }}
-            />
-          </View>
-
-          {/* Confirm Password */}
-          <View style={{ marginBottom: 24 }}>
-            <TextInput
-              placeholder="Confirm Password"
-              placeholderTextColor={theme.textLight}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-              style={{
-                backgroundColor: theme.card,
-                color: theme.textDark,
-                fontFamily: Fonts.body,
-                borderWidth: 1,
-                borderColor: theme.border,
-                borderRadius: 12,
-                padding: 16,
-                fontSize: 16,
-              }}
-            />
-          </View>
-
-          {/* Professional Information */}
-          <Text style={{ 
-            fontSize: 18,
-            fontWeight: '600',
-            color: theme.textDark,
-            fontFamily: Fonts.subheading,
-            marginBottom: 16,
-          }}>
-            Professional Information
-          </Text>
-
-          {/* Profession */}
-          <View style={{ marginBottom: 16 }}>
-            <View style={{
-              backgroundColor: theme.card,
-              borderWidth: 1,
-              borderColor: theme.border,
-              borderRadius: 12,
-            }}>
-              <Picker
-                selectedValue={profession}
-                onValueChange={setProfession}
-                style={{
-                  color: theme.textDark,
-                  fontFamily: Fonts.body,
-                  fontSize: 16,
-                }}
-              >
-                <Picker.Item label="Select Profession" value="" />
-                {professions.map((prof) => (
-                  <Picker.Item key={prof} label={prof} value={prof} />
-                ))}
-              </Picker>
-            </View>
-          </View>
-
-          {/* Experience */}
-          <View style={{ marginBottom: 16 }}>
-            <TextInput
-              placeholder="Years of Experience"
-              placeholderTextColor={theme.textLight}
-              value={experience}
-              onChangeText={setExperience}
-              keyboardType="numeric"
-              style={{
-                backgroundColor: theme.card,
-                color: theme.textDark,
-                fontFamily: Fonts.body,
-                borderWidth: 1,
-                borderColor: theme.border,
-                borderRadius: 12,
-                padding: 16,
-                fontSize: 16,
-              }}
-            />
-          </View>
-
-          {/* Pricing */}
-          <View style={{ marginBottom: 16 }}>
-            <TextInput
-              placeholder="Hourly Rate (PKR)"
-              placeholderTextColor={theme.textLight}
-              value={pricing}
-              onChangeText={setPricing}
-              keyboardType="numeric"
-              style={{
-                backgroundColor: theme.card,
-                color: theme.textDark,
-                fontFamily: Fonts.body,
-                borderWidth: 1,
-                borderColor: theme.border,
-                borderRadius: 12,
-                padding: 16,
-                fontSize: 16,
-              }}
-            />
-          </View>
-
-          {/* City */}
-          <View style={{ marginBottom: 16 }}>
-            <View style={{
-              backgroundColor: theme.card,
-              borderWidth: 1,
-              borderColor: theme.border,
-              borderRadius: 12,
-            }}>
-              <Picker
-                selectedValue={city}
-                onValueChange={setCity}
-                style={{
-                  color: theme.textDark,
-                  fontFamily: Fonts.body,
-                  fontSize: 16,
-                }}
-              >
-                <Picker.Item label="Select City" value="" />
-                {cities.map((cityName) => (
-                  <Picker.Item key={cityName} label={cityName} value={cityName} />
-                ))}
-              </Picker>
-            </View>
-          </View>
-
-          {/* Additional Information */}
-          <Text style={{ 
-            fontSize: 18,
-            fontWeight: '600',
-            color: theme.textDark,
-            fontFamily: Fonts.subheading,
-            marginBottom: 16,
-          }}>
-            Additional Information
-          </Text>
-
-          {/* CNIC */}
-          <View style={{ marginBottom: 16 }}>
-            <TextInput
-              placeholder="CNIC Number"
-              placeholderTextColor={theme.textLight}
-              value={cnic}
-              onChangeText={setCnic}
-              style={{
-                backgroundColor: theme.card,
-                color: theme.textDark,
-                fontFamily: Fonts.body,
-                borderWidth: 1,
-                borderColor: theme.border,
-                borderRadius: 12,
-                padding: 16,
-                fontSize: 16,
-              }}
-            />
-          </View>
-
-          {/* Bio */}
-          <View style={{ marginBottom: 32 }}>
-            <TextInput
-              placeholder="Bio/Description"
-              placeholderTextColor={theme.textLight}
-              value={bio}
-              onChangeText={setBio}
-              multiline
-              numberOfLines={3}
-              style={{
-                backgroundColor: theme.card,
-                color: theme.textDark,
-                fontFamily: Fonts.body,
-                borderWidth: 1,
-                borderColor: theme.border,
-                borderRadius: 12,
-                padding: 16,
-                fontSize: 16,
-                textAlignVertical: 'top',
-                height: 80,
-              }}
-            />
-          </View>
-
-          {/* Sign Up Button */}
-          <TouchableOpacity
+        {/* Minimal Buttons and Link */}
+        <View style={{ marginHorizontal: 32, alignItems: 'center' }}>
+          <Button
+            title={loading ? 'Creating Seller Account...' : 'Create Seller Account'}
             onPress={handleSignup}
-            disabled={loading}
-            style={{
-              backgroundColor: theme.accent,
-              borderRadius: 12,
-              padding: 16,
-              marginBottom: 24,
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{ 
-              fontSize: 16,
-              fontWeight: '600',
-              color: '#fff',
-              fontFamily: Fonts.subheading,
-            }}>
-              {loading ? 'Creating Account...' : 'Create Seller Account'}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Sign In Link */}
-          <View style={{ alignItems: 'center', marginBottom: 32 }}>
-            <Text style={{ 
-              fontSize: 14,
-              color: theme.textLight,
-              fontFamily: Fonts.body,
-              marginBottom: 16,
-            }}>
-              Already have a seller account?
-            </Text>
-            <TouchableOpacity 
+            loading={loading}
+            variant="primary"
+            style={{ marginBottom: 10, width: '100%' }}
+          />
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+            <Text style={{ fontSize: 14, color: theme.textLight, fontFamily: Fonts.body }}>Already a seller? </Text>
+            <Text
+              style={{ fontSize: 14, color: theme.accent, fontFamily: Fonts.body, textDecorationLine: 'underline' }}
               onPress={() => router.push('/provider-signin')}
-              style={{
-                paddingVertical: 12,
-                paddingHorizontal: 24,
-                borderRadius: 8,
-                backgroundColor: theme.accent,
-              }}
             >
-              <Text style={{ 
-                fontSize: 14,
-                fontWeight: '500',
-                color: '#fff',
-                fontFamily: Fonts.body,
-              }}>
-                Sign In
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Back Button */}
-          <TouchableOpacity 
-            onPress={() => router.push('/')} 
-            style={{
-              alignItems: 'center',
-              paddingVertical: 12,
-            }}
-          >
-            <Text style={{ 
-              fontSize: 14,
-              color: theme.textLight,
-              fontFamily: Fonts.body,
-            }}>
-              ← Back to Welcome
+              Sign In
             </Text>
-          </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </View>

@@ -3,6 +3,7 @@ import { View, Text,Image, ScrollView, ActivityIndicator } from 'react-native';
 import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Footer from '../shared/Footer';
 
 export default function ProviderHome() {
   const theme = Colors.dark;
@@ -38,39 +39,42 @@ export default function ProviderHome() {
   }
 
   return (
-    <ScrollView style={{ backgroundColor: theme.background, padding: 16 }}>
-     <Image
-        source={require('../../assets/logo.png')}
-        style={{ width: 340, height: 340, marginBottom: 24 }}
-        resizeMode="contain"
-      />
-      <Text style={{ color: theme.textDark, fontSize: 24, fontFamily: Fonts.heading, marginBottom: 16 }}>
-        Bookings Assigned to You
-      </Text>
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
+      <ScrollView style={{ backgroundColor: theme.background, padding: 16 }}>
+        <Image
+          source={require('../../assets/logo.png')}
+          style={{ width: 340, height: 340, marginBottom: 24 }}
+          resizeMode="contain"
+        />
+        <Text style={{ color: theme.textDark, fontSize: 24, fontFamily: Fonts.heading, marginBottom: 16 }}>
+          Bookings Assigned to You
+        </Text>
 
-      {bookings.map((booking) => (
-        <View
-          key={booking._id}
-          style={{
-            backgroundColor: theme.card,
-            borderRadius: 12,
-            padding: 16,
-            marginBottom: 12,
-            borderColor: theme.border,
-            borderWidth: 1,
-          }}
-        >
-          <Text style={{ fontFamily: Fonts.subheading, color: theme.textDark }}>
-            {booking.service?.category} booked by {booking.customer?.name}
-          </Text>
-          <Text style={{ color: theme.textLight }}>Date: {new Date(booking.date).toLocaleString()}</Text>
-          <Text style={{ color: theme.textLight }}>Status: {booking.status}</Text>
-        </View>
-      ))}
+        {bookings.map((booking) => (
+          <View
+            key={booking._id}
+            style={{
+              backgroundColor: theme.card,
+              borderRadius: 12,
+              padding: 16,
+              marginBottom: 12,
+              borderColor: theme.border,
+              borderWidth: 1,
+            }}
+          >
+            <Text style={{ fontFamily: Fonts.subheading, color: theme.textDark }}>
+              {booking.service?.category} booked by {booking.customer?.name}
+            </Text>
+            <Text style={{ color: theme.textLight }}>Date: {new Date(booking.date).toLocaleString()}</Text>
+            <Text style={{ color: theme.textLight }}>Status: {booking.status}</Text>
+          </View>
+        ))}
 
-      <Text style={{ color: theme.textDark, fontSize: 24, fontFamily: Fonts.heading, marginTop: 24 }}>
-        Total Earnings: PKR {earnings}
-      </Text>
-    </ScrollView>
+        <Text style={{ color: theme.textDark, fontSize: 24, fontFamily: Fonts.heading, marginTop: 24 }}>
+          Total Earnings: PKR {earnings}
+        </Text>
+      </ScrollView>
+      <Footer theme={theme} router={router} />
+    </View>
   );
 }

@@ -8,13 +8,16 @@ import {
   Image,
   Alert,
   StatusBar,
+  RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import FloatingInput from '../shared/FloatingInput';
+import Button from '../shared/Button';
 
-const API_URL = 'http://192.168.10.15:5000/api/auth/login';
+const API_URL = 'http://192.168.10.16:5000/api/auth/login';
 
 export default function ProviderSignin() {
   const router = useRouter();
@@ -65,152 +68,84 @@ export default function ProviderSignin() {
       >
         {/* Header */}
         <View style={{
-          paddingTop: 80,
-          paddingBottom: 40,
-          paddingHorizontal: 24,
+          paddingTop: 100,
+          paddingBottom: 10,
           alignItems: 'center',
         }}>
           <Image
             source={require('../../assets/logo.png')}
             style={{ 
-              width: 80, 
-              height: 80, 
-              marginBottom: 24,
+              width: 400, 
+              height: 400, 
+              marginBottom: 10,
+              borderRadius: 200,
             }}
             resizeMode="contain"
           />
           <Text style={{ 
-            fontSize: 24,
-            fontWeight: '600',
+            fontSize: 28,
+            fontWeight: '400',
             color: theme.textDark,
             fontFamily: Fonts.heading,
-            marginBottom: 8,
+            textAlign: 'center',
+            marginBottom: 10,
+            letterSpacing: -0.5,
           }}>
             Welcome Back, Seller
           </Text>
           <Text style={{ 
-            fontSize: 16,
+            fontSize: 15,
             color: theme.textLight,
             fontFamily: Fonts.body,
             textAlign: 'center',
+            lineHeight: 22,
+            maxWidth: 280,
+            fontWeight: '300',
           }}>
             Sign in to your service provider account
           </Text>
         </View>
 
-        {/* Form */}
-        <View style={{ paddingHorizontal: 24, flex: 1 }}>
-          {/* Email */}
-          <View style={{ marginBottom: 20 }}>
-            <TextInput
-              placeholder="Email"
-              placeholderTextColor={theme.textLight}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              style={{
-                backgroundColor: theme.card,
-                color: theme.textDark,
-                fontFamily: Fonts.body,
-                borderWidth: 1,
-                borderColor: theme.border,
-                borderRadius: 12,
-                padding: 16,
-                fontSize: 16,
-              }}
-            />
-          </View>
+        {/* Minimal Form Area */}
+        <View style={{
+          padding: 0,
+          marginHorizontal: 32,
+          marginBottom: 32,
+          backgroundColor: 'transparent',
+        }}>
+          <FloatingInput
+            label="Email"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          <FloatingInput
+            label="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
+        </View>
 
-          {/* Password */}
-          <View style={{ marginBottom: 32 }}>
-            <TextInput
-              placeholder="Password"
-              placeholderTextColor={theme.textLight}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              style={{
-                backgroundColor: theme.card,
-                color: theme.textDark,
-                fontFamily: Fonts.body,
-                borderWidth: 1,
-                borderColor: theme.border,
-                borderRadius: 12,
-                padding: 16,
-                fontSize: 16,
-              }}
-            />
-          </View>
-
-          {/* Sign In Button */}
-          <TouchableOpacity
+        {/* Minimal Buttons and Link */}
+        <View style={{ marginHorizontal: 32, alignItems: 'center' }}>
+          <Button
+            title={loading ? 'Signing In...' : 'Sign In as Seller'}
             onPress={handleSignin}
-            disabled={loading}
-            style={{
-              backgroundColor: theme.accent,
-              borderRadius: 12,
-              padding: 16,
-              marginBottom: 24,
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{ 
-              fontSize: 16,
-              fontWeight: '600',
-              color: '#fff',
-              fontFamily: Fonts.subheading,
-            }}>
-              {loading ? 'Signing In...' : 'Sign In as Seller'}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Sign Up Link */}
-          <View style={{ alignItems: 'center', marginBottom: 32 }}>
-            <Text style={{ 
-              fontSize: 14,
-              color: theme.textLight,
-              fontFamily: Fonts.body,
-              marginBottom: 16,
-            }}>
-              Don't have a seller account?
-            </Text>
-            <TouchableOpacity 
+            loading={loading}
+            variant="primary"
+            style={{ marginBottom: 10, width: '100%' }}
+          />
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+            <Text style={{ fontSize: 14, color: theme.textLight, fontFamily: Fonts.body }}>Don't have a seller account? </Text>
+            <Text
+              style={{ fontSize: 14, color: theme.accent, fontFamily: Fonts.body, textDecorationLine: 'underline' }}
               onPress={() => router.push('/seller-signup')}
-              style={{
-                paddingVertical: 12,
-                paddingHorizontal: 24,
-                borderRadius: 8,
-                backgroundColor: theme.accent,
-              }}
             >
-              <Text style={{ 
-                fontSize: 14,
-                fontWeight: '500',
-                color: '#fff',
-                fontFamily: Fonts.body,
-              }}>
-                Create Seller Account
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Back Button */}
-          <TouchableOpacity 
-            onPress={() => router.push('/')} 
-            style={{
-              alignItems: 'center',
-              paddingVertical: 12,
-            }}
-          >
-            <Text style={{ 
-              fontSize: 14,
-              color: theme.textLight,
-              fontFamily: Fonts.body,
-            }}>
-              ← Back to Welcome
+              Create Seller Account
             </Text>
-          </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </View>

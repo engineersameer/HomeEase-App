@@ -11,31 +11,22 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
+import Footer from '../shared/Footer';
+import { useTheme } from '../../context/ThemeContext';
 
-const API_URL = 'http://192.168.10.15:5000/api/customer/notifications';
+const API_URL = 'http://192.168.10.16:5000/api/customer/notifications';
 
 export default function CustomerNotifications() {
   const router = useRouter();
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const theme = isDarkMode ? Colors.dark : Colors.light;
+  const { theme } = useTheme();
 
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    loadThemePreference();
     fetchNotifications();
   }, []);
-
-  const loadThemePreference = async () => {
-    try {
-      const savedTheme = await AsyncStorage.getItem('theme');
-      setIsDarkMode(savedTheme === 'dark');
-    } catch (error) {
-      console.log('Error loading theme preference:', error);
-    }
-  };
 
   const fetchNotifications = async () => {
     try {
@@ -216,45 +207,29 @@ export default function CustomerNotifications() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
-      {/* Header */}
-      <View style={{ 
-        backgroundColor: theme.primary, 
-        paddingTop: 60,
-        paddingBottom: 20,
-        paddingHorizontal: 20
+      {/* Header with Refresh Button */}
+      <View style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingTop: 20,
+        paddingBottom: 16,
+        paddingHorizontal: 24,
+        backgroundColor: theme.card,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.border,
       }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <View>
-            <Text style={{ 
-              fontSize: 24, 
-              fontWeight: 'bold', 
-              color: '#fff',
-              fontFamily: Fonts.heading
-            }}>
-              Notifications
-            </Text>
-            {unreadCount > 0 && (
-              <Text style={{ 
-                color: '#fff', 
-                fontFamily: Fonts.caption,
-                marginTop: 4
-              }}>
-                {unreadCount} unread
-              </Text>
-            )}
-          </View>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={{ fontSize: 24, color: '#fff' }}>✕</Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.textDark, fontFamily: Fonts.heading }}>
+          Notifications
+        </Text>
+        <TouchableOpacity onPress={onRefresh} style={{ padding: 8 }}>
+          <Text style={{ fontSize: 20, color: theme.textDark }}>⟳</Text>
+        </TouchableOpacity>
       </View>
-
-      {/* Notifications List */}
-      <ScrollView 
-        style={{ flex: 1, paddingHorizontal: 20, paddingTop: 20 }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
       >
         {loading ? (
           <View style={{ alignItems: 'center', paddingVertical: 40 }}>
@@ -288,6 +263,7 @@ export default function CustomerNotifications() {
           </>
         )}
       </ScrollView>
+      <Footer theme={theme} router={router} current="home" />
     </View>
   );
 } 

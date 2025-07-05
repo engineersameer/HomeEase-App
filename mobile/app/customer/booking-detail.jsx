@@ -11,31 +11,22 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
+import Footer from '../shared/Footer';
+import { useTheme } from '../../context/ThemeContext';
 
-const API_URL = 'http://192.168.10.15:5000/api/customer/bookings';
+const API_URL = 'http://192.168.10.16:5000/api/customer/bookings';
 
 export default function BookingDetail() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const theme = isDarkMode ? Colors.dark : Colors.light;
+  const { theme } = useTheme();
 
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadThemePreference();
     fetchBookingDetails();
   }, []);
-
-  const loadThemePreference = async () => {
-    try {
-      const savedTheme = await AsyncStorage.getItem('theme');
-      setIsDarkMode(savedTheme === 'dark');
-    } catch (error) {
-      console.log('Error loading theme preference:', error);
-    }
-  };
 
   const fetchBookingDetails = async () => {
     try {
@@ -45,8 +36,6 @@ export default function BookingDetail() {
       });
       setBooking(response.data);
     } catch (error) {
-      console.log('Error fetching booking details:', error);
-      // Use mock data for now
       setBooking({
         _id: params.bookingId,
         provider: {
@@ -70,37 +59,6 @@ export default function BookingDetail() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleStatusUpdate = async (newStatus) => {
-    try {
-      const token = await AsyncStorage.getItem('token');
-      await axios.put(`${API_URL}/${params.bookingId}/status`, 
-        { status: newStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      Alert.alert('Success', 'Booking status updated successfully!');
-      fetchBookingDetails();
-    } catch (error) {
-      Alert.alert('Error', 'Failed to update booking status');
-    }
-  };
-
-  const handleContactProvider = () => {
-    Alert.alert(
-      'Contact Provider',
-      `Call ${booking?.provider?.name}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Call', 
-          onPress: () => {
-            Alert.alert('Call', `Calling ${booking?.provider?.phone}`);
-          }
-        }
-      ]
-    );
   };
 
   const getStatusColor = (status) => {
@@ -142,268 +100,94 @@ export default function BookingDetail() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
-      {/* Header */}
+      {/* Minimalist Header */}
       <View style={{
-        backgroundColor: theme.primary,
-        paddingTop: 60,
-        paddingBottom: 20,
-        paddingHorizontal: 20
+        backgroundColor: theme.card,
+        paddingTop: 20,
+        paddingBottom: 16,
+        paddingHorizontal: 24,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.border,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
       }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={{
-            fontSize: 20,
-            fontWeight: 'bold',
-            color: '#fff',
-            fontFamily: Fonts.heading
-          }}>
-            Booking Details
-          </Text>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={{ fontSize: 24, color: '#fff' }}>✕</Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.textDark, fontFamily: Fonts.heading }}>
+          Booking Details
+        </Text>
+        <TouchableOpacity onPress={() => router.back()} style={{ padding: 4 }}>
+          <Text style={{ fontSize: 22, color: theme.textDark }}>✕</Text>
+        </TouchableOpacity>
       </View>
-
-      <ScrollView style={{ flex: 1, paddingHorizontal: 20 }}>
-        {/* Status Card */}
-        <View style={{
-          backgroundColor: theme.card,
-          borderRadius: 12,
-          padding: 16,
-          marginTop: 20,
-          marginBottom: 16,
-          borderWidth: 1,
-          borderColor: theme.border,
-          alignItems: 'center'
-        }}>
-          <View style={{
-            backgroundColor: getStatusColor(booking.status),
-            paddingHorizontal: 12,
-            paddingVertical: 6,
-            borderRadius: 20,
-            marginBottom: 8
-          }}>
-            <Text style={{
-              color: '#fff',
-              fontSize: 14,
-              fontWeight: 'bold',
-              fontFamily: Fonts.body,
-              textTransform: 'capitalize'
+      <ScrollView style={{ flex: 1 }}>
+        <View style={{ padding: 24 }}>
+          {/* Status */}
+          <View style={{ alignItems: 'center', marginBottom: 20 }}>
+            <View style={{
+              backgroundColor: getStatusColor(booking.status),
+              paddingHorizontal: 16,
+              paddingVertical: 6,
+              borderRadius: 20,
+              marginBottom: 8
             }}>
-              {booking.status}
+              <Text style={{
+                color: '#fff',
+                fontSize: 14,
+                fontWeight: 'bold',
+                fontFamily: Fonts.body,
+                textTransform: 'capitalize'
+              }}>
+                {booking.status}
+              </Text>
+            </View>
+            <Text style={{ color: theme.textLight, fontFamily: Fonts.caption }}>
+              {booking.service?.category} • {new Date(booking.date).toLocaleDateString()}
             </Text>
           </View>
-          <Text style={{
-            color: theme.textLight,
-            fontFamily: Fonts.caption
-          }}>
-            Booking ID: {booking._id}
-          </Text>
-        </View>
-
-        {/* Provider Info */}
-        <View style={{
-          backgroundColor: theme.card,
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 16,
-          borderWidth: 1,
-          borderColor: theme.border
-        }}>
-          <Text style={{
-            fontSize: 18,
-            fontWeight: 'bold',
-            color: theme.textDark,
-            marginBottom: 12,
-            fontFamily: Fonts.subheading
-          }}>
-            Service Provider
-          </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+          {/* Provider Info */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
             <Image
               source={{ uri: booking.provider?.image || 'https://via.placeholder.com/100' }}
-              style={{ width: 60, height: 60, borderRadius: 30, marginRight: 12 }}
+              style={{ width: 60, height: 60, borderRadius: 30, marginRight: 16, backgroundColor: theme.card }}
             />
             <View style={{ flex: 1 }}>
-              <Text style={{
-                fontSize: 16,
-                fontWeight: 'bold',
-                color: theme.textDark,
-                fontFamily: Fonts.subheading
-              }}>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: theme.textDark, fontFamily: Fonts.subheading }}>
                 {booking.provider?.name}
               </Text>
-              <Text style={{
-                color: theme.textLight,
-                fontFamily: Fonts.body
-              }}>
-                ⭐ {booking.provider?.rating} rating
+              <Text style={{ fontSize: 13, color: theme.textLight, fontFamily: Fonts.body }}>
+                {booking.provider?.email}
+              </Text>
+              <Text style={{ fontSize: 13, color: theme.textLight, fontFamily: Fonts.body }}>
+                {booking.provider?.phone}
               </Text>
             </View>
           </View>
-          <TouchableOpacity
-            onPress={handleContactProvider}
-            style={{
-              backgroundColor: theme.accent,
-              paddingVertical: 8,
-              paddingHorizontal: 16,
-              borderRadius: 8,
-              alignItems: 'center'
-            }}
-          >
-            <Text style={{ color: '#fff', fontFamily: Fonts.body }}>
-              Contact Provider
+          {/* Service Info */}
+          <View style={{ marginBottom: 20 }}>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: theme.textDark, fontFamily: Fonts.subheading, marginBottom: 6 }}>
+              {booking.service?.title}
             </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Service Details */}
-        <View style={{
-          backgroundColor: theme.card,
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 16,
-          borderWidth: 1,
-          borderColor: theme.border
-        }}>
-          <Text style={{
-            fontSize: 18,
-            fontWeight: 'bold',
-            color: theme.textDark,
-            marginBottom: 12,
-            fontFamily: Fonts.subheading
-          }}>
-            Service Details
-          </Text>
-          <View style={{ marginBottom: 8 }}>
-            <Text style={{
-              fontSize: 16,
-              fontWeight: '600',
-              color: theme.textDark,
-              fontFamily: Fonts.subheading
-            }}>
-              {booking.service?.title || booking.service?.category}
+            <Text style={{ fontSize: 14, color: theme.textLight, fontFamily: Fonts.body, marginBottom: 4 }}>
+              {booking.location}
             </Text>
-            <Text style={{
-              color: theme.textLight,
-              fontFamily: Fonts.body
-            }}>
-              Category: {booking.service?.category}
+            <Text style={{ fontSize: 14, color: theme.textLight, fontFamily: Fonts.body }}>
+              {booking.description}
             </Text>
           </View>
-          <Text style={{
-            color: theme.textDark,
-            fontFamily: Fonts.body,
-            marginBottom: 8
-          }}>
-            💬 {booking.description}
-          </Text>
-          <Text style={{
-            color: theme.primary,
-            fontSize: 18,
-            fontWeight: 'bold',
-            fontFamily: Fonts.subheading
-          }}>
-            💰 PKR {booking.estimatedCost}
-          </Text>
-        </View>
-
-        {/* Booking Information */}
-        <View style={{
-          backgroundColor: theme.card,
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 16,
-          borderWidth: 1,
-          borderColor: theme.border
-        }}>
-          <Text style={{
-            fontSize: 18,
-            fontWeight: 'bold',
-            color: theme.textDark,
-            marginBottom: 12,
-            fontFamily: Fonts.subheading
-          }}>
-            Booking Information
-          </Text>
-          <View style={{ marginBottom: 8 }}>
-            <Text style={{
-              color: theme.textDark,
-              fontFamily: Fonts.body
-            }}>
-              📅 Date: {new Date(booking.date).toLocaleDateString()}
+          {/* Cost & Notes */}
+          <View style={{ marginBottom: 20 }}>
+            <Text style={{ fontSize: 15, color: theme.textDark, fontFamily: Fonts.body, marginBottom: 2 }}>
+              Estimated Cost: <Text style={{ color: theme.primary, fontWeight: 'bold' }}>PKR {booking.estimatedCost}</Text>
             </Text>
-          </View>
-          <View style={{ marginBottom: 8 }}>
-            <Text style={{
-              color: theme.textDark,
-              fontFamily: Fonts.body
-            }}>
-              🕐 Time: {new Date(booking.date).toLocaleTimeString()}
-            </Text>
-          </View>
-          <View style={{ marginBottom: 8 }}>
-            <Text style={{
-              color: theme.textDark,
-              fontFamily: Fonts.body
-            }}>
-              📍 Location: {booking.location}
-            </Text>
-          </View>
-          {booking.notes && (
-            <View style={{ marginBottom: 8 }}>
-              <Text style={{
-                color: theme.textDark,
-                fontFamily: Fonts.body
-              }}>
-                📝 Notes: {booking.notes}
+            {booking.notes && (
+              <Text style={{ fontSize: 14, color: theme.textLight, fontFamily: Fonts.body, marginTop: 4 }}>
+                Notes: {booking.notes}
               </Text>
-            </View>
-          )}
+            )}
+          </View>
         </View>
-
-        {/* Actions */}
-        {booking.status === 'pending' && (
-          <View style={{ marginBottom: 16 }}>
-            <TouchableOpacity
-              onPress={() => handleStatusUpdate('cancelled')}
-              style={{
-                backgroundColor: theme.error,
-                paddingVertical: 12,
-                borderRadius: 8,
-                alignItems: 'center'
-              }}
-            >
-              <Text style={{ color: '#fff', fontFamily: Fonts.body, fontWeight: '600' }}>
-                Cancel Booking
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {booking.status === 'completed' && (
-          <View style={{ marginBottom: 16 }}>
-            <TouchableOpacity
-              onPress={() => router.push({
-                pathname: '/customer/review-booking',
-                params: { bookingId: booking._id }
-              })}
-              style={{
-                backgroundColor: theme.accent,
-                paddingVertical: 12,
-                borderRadius: 8,
-                alignItems: 'center'
-              }}
-            >
-              <Text style={{ color: '#fff', fontFamily: Fonts.body, fontWeight: '600' }}>
-                Leave Review
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        <View style={{ height: 20 }} />
       </ScrollView>
+      <Footer theme={theme} router={router} current="orders" />
     </View>
   );
 } 
