@@ -1,17 +1,17 @@
 const mongoose = require('mongoose');
 
 const bookingSchema = new mongoose.Schema({
-  customer: { 
+  customerId: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'User',
     required: true
   },
-  provider: { 
+  providerId: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'User',
     required: true
   },
-  service: { 
+  serviceId: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Service'
   },
@@ -62,12 +62,21 @@ const bookingSchema = new mongoose.Schema({
   updatedAt: {
     type: Date,
     default: Date.now
+  },
+  bookingId: {
+    type: String,
+    required: true,
+    unique: true
   }
 });
 
 // Update the updatedAt field before saving
 bookingSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
+  // Generate unique bookingId if not set
+  if (!this.bookingId) {
+    this.bookingId = 'BOOK-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+  }
   next();
 });
 

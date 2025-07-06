@@ -5,11 +5,11 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  SafeAreaView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Fonts } from '../../Color/Color';
-import Footer from '../shared/Footer';
-import FloatingInput from '../shared/FloatingInput';
+import FloatingInput from '../customer/shared/FloatingInput';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function ServiceSearch() {
@@ -77,19 +77,23 @@ export default function ServiceSearch() {
   });
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.background }}>
-      {/* Minimalist Header (like orders/profile) */}
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+      {/* Consistent Header */}
       <View style={{
         backgroundColor: theme.card,
-        paddingTop: 20, 
-        paddingBottom: 16,
+        paddingTop: 51,
+        
+        paddingBottom: 24,
         paddingHorizontal: 24,
         borderBottomWidth: 1,
         borderBottomColor: theme.border,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-start',
       }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 12 }}>
+          <Text style={{ fontSize: 22, color: theme.textDark }}>{'←'}</Text>
+        </TouchableOpacity>
         <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.textDark, fontFamily: Fonts.heading }}>
           Search Services
         </Text>
@@ -200,7 +204,6 @@ export default function ServiceSearch() {
           </View>
         </View>
       </ScrollView>
-      <Footer theme={theme} router={router} current="home" />
-    </View>
+    </SafeAreaView>
   );
 } 

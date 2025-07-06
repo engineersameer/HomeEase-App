@@ -7,11 +7,12 @@ import {
   TextInput,
   Alert,
   Linking,
+  SafeAreaView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, Fonts } from '../../Color/Color';
-import Footer from '../shared/Footer';
+import Footer from '../customer/shared/Footer';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function CustomerSupport() {
@@ -248,29 +249,27 @@ export default function CustomerSupport() {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.background }}>
-      {/* Header */}
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+      {/* Consistent Header */}
       <View style={{
         backgroundColor: theme.card,
-        paddingTop: 20,
-        paddingBottom: 20,
-        paddingHorizontal: 20
+       
+        paddingTop: 51,
+        paddingBottom: 24,
+        paddingHorizontal: 24,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.border,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
       }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={{
-            fontSize: 24,
-            fontWeight: 'bold',
-            color: theme.textDark,
-            fontFamily: Fonts.heading
-          }}>
-            Support & Help
-          </Text>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={{ fontSize: 24, color: theme.textDark }}>✕</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 12 }}>
+          <Text style={{ fontSize: 22, color: theme.textDark }}>{'←'}</Text>
+        </TouchableOpacity>
+        <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.textDark, fontFamily: Fonts.heading }}>
+          Support
+        </Text>
       </View>
-
       <ScrollView style={{ flex: 1, paddingHorizontal: 20 }}>
         {/* Contact Support */}
         <View style={{ marginTop: 20, marginBottom: 24 }}>
@@ -279,6 +278,7 @@ export default function CustomerSupport() {
             fontWeight: 'bold',
             color: theme.textDark,
             marginBottom: 12,
+            paddingbottom: 10,
             fontFamily: Fonts.heading
           }}>
             Contact Support
@@ -359,7 +359,6 @@ export default function CustomerSupport() {
 
         <View style={{ height: 20 }} />
       </ScrollView>
-      <Footer theme={theme} router={router} current="home" />
-    </View>
+    </SafeAreaView>
   );
 } 

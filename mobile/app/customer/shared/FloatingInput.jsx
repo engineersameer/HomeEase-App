@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, TextInput, Animated, Text } from 'react-native';
-import { Colors, Fonts } from '../../Color/Color';
+import { Colors, Fonts } from '../../../Color/Color';
 
 export default function FloatingInput({
   label,

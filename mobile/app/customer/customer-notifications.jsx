@@ -6,15 +6,15 @@ import {
   ScrollView,
   Image,
   Alert,
+  SafeAreaView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
-import Footer from '../shared/Footer';
 import { useTheme } from '../../context/ThemeContext';
 
-const API_URL = 'http://192.168.10.16:5000/api/customer/notifications';
+const API_URL = 'http://192.168.100.5:5000/api/customer/notifications';
 
 export default function CustomerNotifications() {
   const router = useRouter();
@@ -206,31 +206,30 @@ export default function CustomerNotifications() {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.background }}>
-      {/* Header with Refresh Button */}
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+      {/* Consistent Header */}
       <View style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingTop: 20,
+        backgroundColor: theme.card,
+        paddingTop: 45,
         paddingBottom: 16,
         paddingHorizontal: 24,
-        backgroundColor: theme.card,
         borderBottomWidth: 1,
         borderBottomColor: theme.border,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
       }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 12 }}>
+          <Text style={{ fontSize: 22, color: theme.textDark }}>{'←'}</Text>
+        </TouchableOpacity>
         <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.textDark, fontFamily: Fonts.heading }}>
           Notifications
         </Text>
-        <TouchableOpacity onPress={onRefresh} style={{ padding: 8 }}>
+        <TouchableOpacity onPress={onRefresh} style={{ marginLeft: 'auto', padding: 8 }}>
           <Text style={{ fontSize: 20, color: theme.textDark }}>⟳</Text>
         </TouchableOpacity>
       </View>
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView style={{ flex: 1 }}>
         {loading ? (
           <View style={{ alignItems: 'center', paddingVertical: 40 }}>
             <Text style={{ color: theme.textLight, fontFamily: Fonts.body }}>
@@ -263,7 +262,6 @@ export default function CustomerNotifications() {
           </>
         )}
       </ScrollView>
-      <Footer theme={theme} router={router} current="home" />
-    </View>
+    </SafeAreaView>
   );
 } 

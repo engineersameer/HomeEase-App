@@ -6,15 +6,16 @@ import {
   ScrollView,
   Image,
   Alert,
+  SafeAreaView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
-import Footer from '../shared/Footer';
+import Footer from '../customer/shared/Footer';
 import { useTheme } from '../../context/ThemeContext';
 
-const API_URL = 'http://192.168.10.16:5000/api/customer/bookings';
+const API_URL = 'http://192.168.100.5:5000/api/customer/bookings';
 
 export default function CustomerBookings() {
   const router = useRouter();
@@ -126,12 +127,12 @@ export default function CustomerBookings() {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
       {/* Minimalist Header */}
       <View style={{
         backgroundColor: theme.card,
-        paddingTop: 20,
-        paddingBottom: 16,
+        paddingTop: 45,
+        paddingBottom: 15,
         paddingHorizontal: 24,
         borderBottomWidth: 1,
         borderBottomColor: theme.border,
@@ -146,7 +147,7 @@ export default function CustomerBookings() {
           <Text style={{ fontSize: 20, color: theme.textDark }}>⟳</Text>
         </TouchableOpacity>
       </View>
-      <ScrollView style={{ flex: 1 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 80 }}>
         <View style={{ padding: 24 }}>
           {/* Status Filters */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
@@ -222,7 +223,6 @@ export default function CustomerBookings() {
           <View style={{ height: 40 }} />
         </View>
       </ScrollView>
-      <Footer theme={theme} router={router} current="orders" />
-    </View>
+    </SafeAreaView>
   );
 } 

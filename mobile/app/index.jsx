@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity, ScrollView, Dimensions, StatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Fonts } from '../Color/Color';
-import Button from './shared/Button';
+import Button from './customer/shared/Button';
 
 
 const { width } = Dimensions.get('window');
@@ -25,15 +25,15 @@ export default function WelcomeScreen() {
       >
         {/* Header Section */}
         <View style={{
-          paddingTop: 100,
+          paddingTop: 40,
           paddingBottom: 20,
           alignItems: 'center',
         }}>
           <Image
             source={require('../assets/logo.png')}
             style={{ 
-              width: 400, 
-              height: 400, 
+              width: 220, 
+              height: 220, 
               marginBottom: 10,
               borderRadius: 200,
             }}

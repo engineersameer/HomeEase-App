@@ -7,7 +7,6 @@ import {
   ScrollView,
   Image,
   Alert,
-  Switch,
   SafeAreaView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -15,25 +14,30 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
 import { useTheme } from '../../context/ThemeContext';
-import Footer from '../customer/shared/Footer';
-import FloatingInput from '../customer/shared/FloatingInput';
+import FloatingInput from './shared/FloatingInput';
 import { MaterialIcons } from '@expo/vector-icons';
 
 const API_URL = 'http://192.168.100.5:5000/api/auth/profile';
 
-export default function CustomerProfile() {
+export default function ProviderProfile() {
   const router = useRouter();
-  const { theme, isDarkMode, toggleTheme } = useTheme();
+  const { theme } = useTheme();
 
   // Profile state
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
+  const [profession, setProfession] = useState('');
+  const [experience, setExperience] = useState('');
+  const [pricing, setPricing] = useState('');
+  const [certifications, setCertifications] = useState('');
+  const [cnic, setCnic] = useState('');
+  const [availability, setAvailability] = useState('');
+  const [bio, setBio] = useState('');
   const [profileImage, setProfileImage] = useState(null);
-  const [editingField, setEditingField] = useState(null); // 'name', 'phone', 'address', 'city', or null
-  const [originalValues, setOriginalValues] = useState({ name: '', phone: '', address: '', city: '' });
+  const [editingField, setEditingField] = useState(null); // which field is being edited
+  const [originalValues, setOriginalValues] = useState({});
   const [savedField, setSavedField] = useState(null); // for green icon feedback
   const [loading, setLoading] = useState(true);
 
@@ -52,19 +56,30 @@ export default function CustomerProfile() {
       const response = await axios.get(API_URL, {
         headers: { Authorization: `Bearer ${token}` }
       });
-
       const user = response.data;
       setName(user.name || '');
       setEmail(user.email || '');
       setPhone(user.phone || '');
-      setAddress(user.address || '');
       setCity(user.city || '');
+      setProfession(user.profession || '');
+      setExperience(user.experience ? String(user.experience) : '');
+      setPricing(user.pricing ? String(user.pricing) : '');
+      setCertifications(user.certifications || '');
+      setCnic(user.cnic || '');
+      setAvailability(user.availability || '');
+      setBio(user.bio || '');
       setProfileImage(user.profileImage);
       setOriginalValues({
         name: user.name || '',
         phone: user.phone || '',
-        address: user.address || '',
         city: user.city || '',
+        profession: user.profession || '',
+        experience: user.experience ? String(user.experience) : '',
+        pricing: user.pricing ? String(user.pricing) : '',
+        certifications: user.certifications || '',
+        cnic: user.cnic || '',
+        availability: user.availability || '',
+        bio: user.bio || '',
       });
       setLoading(false);
     } catch (error) {
@@ -79,16 +94,23 @@ export default function CustomerProfile() {
       const response = await axios.put(API_URL, {
         name,
         phone,
-        address,
         city,
+        profession,
+        experience,
+        pricing,
+        certifications,
+        cnic,
+        availability,
+        bio,
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-
       Alert.alert('Success', 'Profile updated successfully!');
       setSavedField(editingField); // show green icon
       setEditingField(null);
-      setOriginalValues({ name, phone, address, city });
+      setOriginalValues({
+        name, phone, city, profession, experience, pricing, certifications, cnic, availability, bio
+      });
       setTimeout(() => setSavedField(null), 1500);
     } catch (error) {
       Alert.alert('Error', error.response?.data?.message || 'Failed to update profile');
@@ -98,8 +120,14 @@ export default function CustomerProfile() {
   const handleCancelEdit = () => {
     setName(originalValues.name);
     setPhone(originalValues.phone);
-    setAddress(originalValues.address);
     setCity(originalValues.city);
+    setProfession(originalValues.profession);
+    setExperience(originalValues.experience);
+    setPricing(originalValues.pricing);
+    setCertifications(originalValues.certifications);
+    setCnic(originalValues.cnic);
+    setAvailability(originalValues.availability);
+    setBio(originalValues.bio);
     setEditingField(null);
   };
 
@@ -168,7 +196,7 @@ export default function CustomerProfile() {
                   style={{ width: 96, height: 96, borderRadius: 48 }}
                 />
               ) : (
-                <Text style={{ fontSize: 40, color: theme.textLight }}>👤</Text>
+                <Text style={{ fontSize: 40, color: theme.textDark }}>👤</Text>
               )}
             </View>
           </View>
@@ -181,7 +209,7 @@ export default function CustomerProfile() {
               fontFamily: Fonts.subheading,
               marginBottom: 15
             }}>
-              Personal Information
+              Provider Information
             </Text>
             {/* Name */}
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
@@ -210,7 +238,7 @@ export default function CustomerProfile() {
             {/* Phone */}
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
               <View style={{ flex: 1 }}>
-                <FloatingInput label="Phone" value={phone} onChangeText={setPhone} theme={theme} editable={editingField === 'phone'} inputStyle={{ color: theme.textDark }} />
+                <FloatingInput label="Phone" value={phone} onChangeText={setPhone} theme={theme} keyboardType="phone-pad" editable={editingField === 'phone'} inputStyle={{ color: theme.textDark }} />
               </View>
               <TouchableOpacity
                 onPress={() => setEditingField('phone')}
@@ -221,23 +249,6 @@ export default function CustomerProfile() {
                   name="edit"
                   size={22}
                   color={editingField === 'phone' ? theme.primary : theme.textDark}
-                />
-              </TouchableOpacity>
-            </View>
-            {/* Address */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-              <View style={{ flex: 1 }}>
-                <FloatingInput label="Address" value={address} onChangeText={setAddress} theme={theme} editable={editingField === 'address'} inputStyle={{ color: theme.textDark }} />
-              </View>
-              <TouchableOpacity
-                onPress={() => setEditingField('address')}
-                style={{ marginLeft: 8 }}
-                disabled={editingField === 'address'}
-              >
-                <MaterialIcons
-                  name="edit"
-                  size={22}
-                  color={editingField === 'address' ? theme.primary : theme.textDark}
                 />
               </TouchableOpacity>
             </View>
@@ -258,10 +269,129 @@ export default function CustomerProfile() {
                 />
               </TouchableOpacity>
             </View>
+            {/* Profession */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+              <View style={{ flex: 1 }}>
+                <FloatingInput label="Profession" value={profession} onChangeText={setProfession} theme={theme} editable={editingField === 'profession'} inputStyle={{ color: theme.textDark }} />
+              </View>
+              <TouchableOpacity
+                onPress={() => setEditingField('profession')}
+                style={{ marginLeft: 8 }}
+                disabled={editingField === 'profession'}
+              >
+                <MaterialIcons
+                  name="edit"
+                  size={22}
+                  color={editingField === 'profession' ? theme.primary : theme.textDark}
+                />
+              </TouchableOpacity>
+            </View>
+            {/* Experience */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+              <View style={{ flex: 1 }}>
+                <FloatingInput label="Experience (years)" value={experience} onChangeText={setExperience} theme={theme} keyboardType="numeric" editable={editingField === 'experience'} inputStyle={{ color: theme.textDark }} />
+              </View>
+              <TouchableOpacity
+                onPress={() => setEditingField('experience')}
+                style={{ marginLeft: 8 }}
+                disabled={editingField === 'experience'}
+              >
+                <MaterialIcons
+                  name="edit"
+                  size={22}
+                  color={editingField === 'experience' ? theme.primary : theme.textDark}
+                />
+              </TouchableOpacity>
+            </View>
+            {/* Pricing */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+              <View style={{ flex: 1 }}>
+                <FloatingInput label="Pricing" value={pricing} onChangeText={setPricing} theme={theme} keyboardType="numeric" editable={editingField === 'pricing'} inputStyle={{ color: theme.textDark }} />
+              </View>
+              <TouchableOpacity
+                onPress={() => setEditingField('pricing')}
+                style={{ marginLeft: 8 }}
+                disabled={editingField === 'pricing'}
+              >
+                <MaterialIcons
+                  name="edit"
+                  size={22}
+                  color={editingField === 'pricing' ? theme.primary : theme.textDark}
+                />
+              </TouchableOpacity>
+            </View>
+            {/* Certifications */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+              <View style={{ flex: 1 }}>
+                <FloatingInput label="Certifications" value={certifications} onChangeText={setCertifications} theme={theme} editable={editingField === 'certifications'} inputStyle={{ color: theme.textDark }} />
+              </View>
+              <TouchableOpacity
+                onPress={() => setEditingField('certifications')}
+                style={{ marginLeft: 8 }}
+                disabled={editingField === 'certifications'}
+              >
+                <MaterialIcons
+                  name="edit"
+                  size={22}
+                  color={editingField === 'certifications' ? theme.primary : theme.textDark}
+                />
+              </TouchableOpacity>
+            </View>
+            {/* CNIC */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+              <View style={{ flex: 1 }}>
+                <FloatingInput label="CNIC" value={cnic} onChangeText={setCnic} theme={theme} editable={editingField === 'cnic'} inputStyle={{ color: theme.textDark }} />
+              </View>
+              <TouchableOpacity
+                onPress={() => setEditingField('cnic')}
+                style={{ marginLeft: 8 }}
+                disabled={editingField === 'cnic'}
+              >
+                <MaterialIcons
+                  name="edit"
+                  size={22}
+                  color={editingField === 'cnic' ? theme.primary : theme.textDark}
+                />
+              </TouchableOpacity>
+            </View>
+            {/* Availability */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+              <View style={{ flex: 1 }}>
+                <FloatingInput label="Availability" value={availability} onChangeText={setAvailability} theme={theme} editable={editingField === 'availability'} inputStyle={{ color: theme.textDark }} />
+              </View>
+              <TouchableOpacity
+                onPress={() => setEditingField('availability')}
+                style={{ marginLeft: 8 }}
+                disabled={editingField === 'availability'}
+              >
+                <MaterialIcons
+                  name="edit"
+                  size={22}
+                  color={editingField === 'availability' ? theme.primary : theme.textDark}
+                />
+              </TouchableOpacity>
+            </View>
+            {/* Bio */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+              <View style={{ flex: 1 }}>
+                <FloatingInput label="Bio" value={bio} onChangeText={setBio} theme={theme} editable={editingField === 'bio'} inputStyle={{ color: theme.textDark }} />
+              </View>
+              <TouchableOpacity
+                onPress={() => setEditingField('bio')}
+                style={{ marginLeft: 8 }}
+                disabled={editingField === 'bio'}
+              >
+                <MaterialIcons
+                  name="edit"
+                  size={22}
+                  color={editingField === 'bio' ? theme.primary : theme.textDark}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
           {/* Save/Cancel Buttons for the field being edited */}
           {editingField && (
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, marginBottom: 5 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 }}>
               <TouchableOpacity
                 style={{ backgroundColor: theme.primary, padding: 12, borderRadius: 8, flex: 1, marginRight: 8 }}
                 onPress={handleUpdateProfile}
@@ -276,21 +406,12 @@ export default function CustomerProfile() {
               </TouchableOpacity>
             </View>
           )}
+          {/* Logout Button */}
           <TouchableOpacity
+            style={{ marginTop: 32, backgroundColor: theme.accent, padding: 14, borderRadius: 8 }}
             onPress={handleLogout}
-            style={{
-              backgroundColor: theme.card,
-              borderRadius: 12,
-              paddingVertical: 14,
-              alignItems: 'center',
-              borderWidth: 1,
-              borderColor: theme.border,
-              marginTop: 32,
-            }}
           >
-            <Text style={{ fontSize: 16, color: theme.textDark, fontFamily: Fonts.subheading }}>
-              Logout
-            </Text>
+            <Text style={{ color: '#fff', fontFamily: Fonts.body, textAlign: 'center', fontWeight: 'bold' }}>Logout</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

@@ -12,10 +12,9 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
-import Footer from '../shared/Footer';
 import { useTheme } from '../../context/ThemeContext';
 
-const API_URL = 'http://192.168.10.16:5000/api/customer/reviews';
+const API_URL = 'http://192.168.100.5:5000/api/customer/reviews';
 
 export default function ReviewBooking() {
   const router = useRouter();
@@ -34,7 +33,7 @@ export default function ReviewBooking() {
   const fetchBookingDetails = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-      const response = await axios.get(`http://192.168.10.15:5000/api/customer/bookings/${params.bookingId}`, {
+      const response = await axios.get(`http://192.168.100.5:5000/api/customer/bookings/${params.bookingId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setBooking(response.data);
@@ -308,7 +307,6 @@ export default function ReviewBooking() {
 
         <View style={{ height: 20 }} />
       </ScrollView>
-      <Footer theme={theme} router={router} current="orders" />
     </View>
   );
 } 

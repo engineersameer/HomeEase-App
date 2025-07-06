@@ -17,3 +17,16 @@ exports.getProviderDashboard = async (req, res) => {
     earnings: totalEarnings[0]?.total || 0,
   });
 };
+
+exports.getAvailableServices = async (req, res) => {
+  // For now, return mock data
+  const services = [
+    { _id: 'svc1', category: 'Cleaning', description: 'Home and office cleaning services' },
+    { _id: 'svc2', category: 'Repairs', description: 'General repair and handyman services' },
+    { _id: 'svc3', category: 'Painting', description: 'Interior and exterior painting' },
+    { _id: 'svc4', category: 'Gardening', description: 'Lawn and garden maintenance' },
+    { _id: 'svc5', category: 'Electrical', description: 'Electrical installation and repair' },
+    { _id: 'svc6', category: 'Moving', description: 'Moving and relocation services' },
+  ];
+  res.json(services);
+};

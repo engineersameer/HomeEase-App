@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, View, ActivityIndicator } from 'react-native';
-import { Colors, Fonts } from '../../Color/Color';
+import { Colors, Fonts } from '../../../Color/Color';
 
 export default function Button({
   title,

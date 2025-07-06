@@ -9,15 +9,16 @@ import {
   Alert,
   StatusBar,
   RefreshControl,
+  SafeAreaView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Button from '../shared/Button';
-import FloatingInput from '../shared/FloatingInput';
+import Button from '../customer/shared/Button';
+import FloatingInput from '../customer/shared/FloatingInput';
 
-const API_URL = 'http://192.168.10.16:5000/api/auth/login';
+const API_URL = 'http://192.168.100.5:5000/api/auth/login';
 
 export default function CustomerSignin() {
   const router = useRouter();
@@ -59,26 +60,26 @@ export default function CustomerSignin() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.background} />
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
         <View style={{
-          paddingTop: 100,
-          paddingBottom: 40,
+          paddingTop: 40,
+          paddingBottom: 20,
           alignItems: 'center',
         }}>
           <Image
             source={require('../../assets/logo.png')}
             style={{ 
-              width: 400, 
-              height: 400, 
+              width: 220, 
+              height: 220, 
               marginBottom: 10,
-              borderRadius: 100,
+              borderRadius: 110,
             }}
             resizeMode="contain"
           />
@@ -152,6 +153,6 @@ export default function CustomerSignin() {
           </View>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 } 

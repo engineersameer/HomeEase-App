@@ -9,15 +9,16 @@ import {
   Alert,
   StatusBar,
   RefreshControl,
+  SafeAreaView,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
 import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
-import FloatingInput from '../shared/FloatingInput';
-import Button from '../shared/Button';
+import FloatingInput from '../provider/shared/FloatingInput';
+import Button from '../provider/shared/Button';
 
-const API_URL = 'http://192.168.10.16:5000/api/auth/signup';
+const API_URL = 'http://192.168.100.5:5000/api/auth/signup';
 
 export default function SellerSignup() {
   const router = useRouter();
@@ -107,26 +108,26 @@ export default function SellerSignup() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.background} />
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
         <View style={{
-          paddingTop: 100,
-          paddingBottom: 10,
+          paddingTop: 40,
+          paddingBottom: 20,
           alignItems: 'center',
         }}>
           <Image
             source={require('../../assets/logo.png')}
             style={{ 
-              width: 400, 
-              height: 400, 
+              width: 220, 
+              height: 220, 
               marginBottom: 10,
-              borderRadius: 200,
+              borderRadius: 110,
             }}
             resizeMode="contain"
           />
@@ -178,7 +179,7 @@ export default function SellerSignup() {
         {/* Minimal Buttons and Link */}
         <View style={{ marginHorizontal: 32, alignItems: 'center' }}>
           <Button
-            title={loading ? 'Creating Seller Account...' : 'Create Seller Account'}
+            title={loading ? 'Creating Seller Account...' : 'Create Account'}
             onPress={handleSignup}
             loading={loading}
             variant="primary"
@@ -195,6 +196,6 @@ export default function SellerSignup() {
           </View>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 } 

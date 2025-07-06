@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Colors, Fonts } from '../../Color/Color';
+import { Colors, Fonts } from '../../../Color/Color';
 
 export default function BottomBar({ userRole = 'customer' }) {
   const router = useRouter();

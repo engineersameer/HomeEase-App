@@ -7,12 +7,12 @@ import {
   Alert,
   StatusBar,
   Image,
+  SafeAreaView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, Fonts } from '../../Color/Color';
 import { useTheme } from '../../context/ThemeContext';
-import Footer from '../shared/Footer';
 
 export default function CustomerHome() {
   const router = useRouter();
@@ -47,7 +47,7 @@ export default function CustomerHome() {
   const fetchCustomerStats = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-      const response = await fetch('http://192.168.1.100:3000/api/customer/stats', {
+      const response = await fetch('http://192.168.100.5:3000/api/customer/stats', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -66,7 +66,7 @@ export default function CustomerHome() {
   const fetchRecentBookings = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-      const response = await fetch('http://192.168.1.100:3000/api/customer/bookings?limit=5', {
+      const response = await fetch('http://192.168.100.5:3000/api/customer/bookings?limit=5', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -136,14 +136,14 @@ export default function CustomerHome() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.background} />
       
       {/* Header */}
       <View style={{
         backgroundColor: theme.card,
-        paddingTop: 20,
-        paddingBottom: 16,
+        paddingTop: 45,
+        paddingBottom: 15,
         paddingHorizontal: 24,
         borderBottomWidth: 1,
         borderBottomColor: theme.border,
@@ -195,7 +195,7 @@ export default function CustomerHome() {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 80 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Dashboard Stats */}
@@ -589,8 +589,6 @@ export default function CustomerHome() {
           )}
         </View>
       </ScrollView>
-      {/* Minimalist Footer */}
-      <Footer theme={theme} router={router} current="home" />
-    </View>
+    </SafeAreaView>
   );
 }

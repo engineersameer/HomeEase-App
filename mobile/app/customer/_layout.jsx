@@ -1,88 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import { Stack } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Colors, Fonts } from '../../Color/Color';
+import React from 'react';
+import { View } from 'react-native';
+import { Slot, useRouter, useSegments } from 'expo-router';
+import { useTheme } from '../../context/ThemeContext';
+import Footer from '../customer/shared/Footer';
 
 export default function CustomerLayout() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const theme = isDarkMode ? Colors.dark : Colors.light;
+  const { theme } = useTheme();
+  const router = useRouter();
+  const segments = useSegments();
+  // Determine which tab is active based on the route
+  const current =
+    segments[segments.length - 1] === 'customer-home'
+      ? 'home'
+      : segments[segments.length - 1] === 'customer-bookings'
+      ? 'orders'
+      : segments[segments.length - 1] === 'customer-profile'
+      ? 'profile'
+      : '';
 
-  useEffect(() => {
-    loadThemePreference();
-  }, []);
-
-  const loadThemePreference = async () => {
-    try {
-      const savedTheme = await AsyncStorage.getItem('theme');
-      setIsDarkMode(savedTheme === 'dark');
-    } catch (error) {
-      console.log('Error loading theme preference:', error);
-    }
-  };
-
+  // Only show footer on Home, Orders, and Profile
+  const showFooter = ["home", "orders", "profile"].includes(current);
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: theme.background },
-        animation: 'slide_from_right',
-      }}
-    >
-      <Stack.Screen
-        name="customer-home"
-        options={{
-          title: 'Home',
-        }}
-      />
-      <Stack.Screen
-        name="customer-profile"
-        options={{
-          title: 'Profile',
-        }}
-      />
-      <Stack.Screen
-        name="service-search"
-        options={{
-          title: 'Search Services',
-        }}
-      />
-      <Stack.Screen
-        name="service-booking"
-        options={{
-          title: 'Book Service',
-        }}
-      />
-      <Stack.Screen
-        name="customer-bookings"
-        options={{
-          title: 'My Bookings',
-        }}
-      />
-      <Stack.Screen
-        name="customer-notifications"
-        options={{
-          title: 'Notifications',
-        }}
-      />
-      <Stack.Screen
-        name="customer-support"
-        options={{
-          title: 'Support',
-        }}
-      />
-      <Stack.Screen
-        name="booking-detail"
-        options={{
-          title: 'Booking Details',
-        }}
-      />
-      <Stack.Screen
-        name="review-booking"
-        options={{
-          title: 'Write Review',
-        }}
-      />
-    </Stack>
+    <View style={{ flex: 1 }}>
+      <Slot />
+      {showFooter && <Footer theme={theme} router={router} current={current} />}
+    </View>
   );
 } 

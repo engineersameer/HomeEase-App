@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Fonts } from '../../Color/Color';
+import { Colors, Fonts } from '../../../Color/Color';
 import { useLocalSearchParams } from 'expo-router';
 
 export default function ServiceDetail() {

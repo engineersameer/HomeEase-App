@@ -11,10 +11,9 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
-import Footer from '../shared/Footer';
 import { useTheme } from '../../context/ThemeContext';
 
-const API_URL = 'http://192.168.10.16:5000/api/customer/bookings';
+const API_URL = 'http://192.168.100.5:5000/api/customer/bookings';
 
 export default function BookingDetail() {
   const router = useRouter();
@@ -187,7 +186,6 @@ export default function BookingDetail() {
           </View>
         </View>
       </ScrollView>
-      <Footer theme={theme} router={router} current="orders" />
     </View>
   );
 } 
