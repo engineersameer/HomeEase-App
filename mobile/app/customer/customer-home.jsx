@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, Fonts } from '../../Color/Color';
 import { useTheme } from '../../context/ThemeContext';
+import { getApiUrl, apiCall, API_CONFIG } from '../../config/api';
 
 export default function CustomerHome() {
   const router = useRouter();
@@ -46,17 +47,11 @@ export default function CustomerHome() {
 
   const fetchCustomerStats = async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      const response = await fetch('http://192.168.100.5:3000/api/customer/stats', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
+      const data = await apiCall(getApiUrl(API_CONFIG.ENDPOINTS.CUSTOMER_STATS));
+      if (data.success) {
         setStats(data);
+      } else {
+        console.log('Failed to fetch stats:', data.message);
       }
     } catch (error) {
       console.log('Error fetching stats:', error);
@@ -65,17 +60,11 @@ export default function CustomerHome() {
 
   const fetchRecentBookings = async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      const response = await fetch('http://192.168.100.5:3000/api/customer/bookings?limit=5', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
+      const data = await apiCall(getApiUrl(API_CONFIG.ENDPOINTS.CUSTOMER_BOOKINGS));
+      if (data.success) {
         setRecentBookings(data.bookings || []);
+      } else {
+        console.log('Failed to fetch bookings:', data.message);
       }
     } catch (error) {
       console.log('Error fetching recent bookings:', error);
@@ -104,6 +93,9 @@ export default function CustomerHome() {
         break;
       case 'notifications':
         router.push('/customer/customer-notifications');
+        break;
+      case 'provider':
+        router.push('/provider-signin');
         break;
       default:
         break;
@@ -198,10 +190,37 @@ export default function CustomerHome() {
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 80 }}
         showsVerticalScrollIndicator={false}
       >
+        {/* Continue as Service Provider Button */}
+        <View style={{
+          paddingHorizontal: 24,
+          paddingTop: 16,
+          marginBottom: 16,
+        }}>
+          <TouchableOpacity
+            onPress={() => handleQuickAction('provider')}
+            style={{
+              backgroundColor: theme.primary,
+              borderRadius: 12,
+              padding: 16,
+              borderWidth: 1,
+              borderColor: theme.primary,
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{
+              fontSize: 16,
+              fontWeight: '600',
+              color: '#FFFFFF',
+              fontFamily: Fonts.body,
+            }}>
+              🔧 Continue as Service Provider
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Dashboard Stats */}
         <View style={{
           paddingHorizontal: 24,
-          paddingTop: 24,
           marginBottom: 24,
         }}>
           <Text style={{
@@ -400,28 +419,27 @@ export default function CustomerHome() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingRight: 24 }}
+            contentContainerStyle={{ gap: 12 }}
           >
             {[
-              { icon: '🏠', name: 'Cleaning', color: '#3B82F6' },
-              { icon: '🔧', name: 'Repairs', color: '#10B981' },
-              { icon: '🎨', name: 'Painting', color: '#F59E0B' },
-              { icon: '🌿', name: 'Gardening', color: '#8B5CF6' },
-              { icon: '🚚', name: 'Moving', color: '#EF4444' },
-              { icon: '🔌', name: 'Electrical', color: '#06B6D4' },
+              { icon: '⚡', name: 'Electrical', color: '#F59E0B' },
+              { icon: '🔧', name: 'Plumbing', color: '#3B82F6' },
+              { icon: '🔨', name: 'Carpentry', color: '#8B5CF6' },
+              { icon: '🎨', name: 'Painting', color: '#10B981' },
+              { icon: '🧹', name: 'Cleaning', color: '#EF4444' },
+              { icon: '❄️', name: 'AC Repair', color: '#06B6D4' },
             ].map((category, index) => (
               <TouchableOpacity
                 key={index}
-                onPress={() => router.push(`/customer/service-search?category=${category.name}`)}
+                onPress={() => router.push('/customer/service-search')}
                 style={{
                   backgroundColor: theme.card,
                   borderRadius: 12,
                   padding: 16,
-                  marginRight: 12,
                   alignItems: 'center',
-                  minWidth: 80,
                   borderWidth: 1,
                   borderColor: theme.border,
+                  minWidth: 80,
                 }}
               >
                 <Text style={{ fontSize: 24, marginBottom: 8 }}>
@@ -431,8 +449,8 @@ export default function CustomerHome() {
                   fontSize: 12,
                   fontWeight: '500',
                   color: theme.textDark,
-                  textAlign: 'center',
                   fontFamily: Fonts.caption,
+                  textAlign: 'center',
                 }}>
                   {category.name}
                 </Text>
@@ -446,96 +464,88 @@ export default function CustomerHome() {
           paddingHorizontal: 24,
           marginBottom: 24,
         }}>
-          <View style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
+          <Text style={{
+            fontSize: 20,
+            fontWeight: '600',
+            color: theme.textDark,
             marginBottom: 16,
+            fontFamily: Fonts.subheading,
           }}>
-            <Text style={{
-              fontSize: 20,
-              fontWeight: '600',
-              color: theme.textDark,
-              fontFamily: Fonts.subheading,
-            }}>
-              Recent Bookings
-            </Text>
-            <TouchableOpacity onPress={() => router.push('/customer/customer-bookings')}>
-              <Text style={{
-                fontSize: 14,
-                color: theme.primary,
-                fontWeight: '500',
-                fontFamily: Fonts.body,
-              }}>
-                View All
-              </Text>
-            </TouchableOpacity>
-          </View>
+            Recent Bookings
+          </Text>
           
-          {recentBookings.length > 0 ? (
-            recentBookings.map((booking, index) => (
-              <TouchableOpacity
-                key={booking._id || index}
-                onPress={() => router.push(`/customer/booking-detail?id=${booking._id}`)}
-                style={{
-                  backgroundColor: theme.card,
-                  borderRadius: 12,
-                  padding: 16,
-                  marginBottom: 12,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                }}
-              >
-                <View style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 8,
-                }}>
+          {recentBookings.map((booking) => (
+            <View
+              key={booking._id}
+              style={{
+                backgroundColor: theme.card,
+                borderRadius: 12,
+                padding: 16,
+                marginBottom: 12,
+                borderWidth: 1,
+                borderColor: theme.border,
+              }}
+            >
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                <View style={{ flex: 1 }}>
                   <Text style={{
                     fontSize: 16,
                     fontWeight: '600',
                     color: theme.textDark,
-                    fontFamily: Fonts.body,
+                    fontFamily: Fonts.subheading,
+                    marginBottom: 4,
                   }}>
-                    {booking.service?.name || 'Service'}
+                    {booking.serviceTitle || 'Service Booking'}
                   </Text>
+                  <Text style={{
+                    fontSize: 14,
+                    color: theme.textLight,
+                    fontFamily: Fonts.body,
+                    marginBottom: 4,
+                  }}>
+                    Provider: {booking.provider?.name || 'Unknown'}
+                  </Text>
+                  <Text style={{
+                    fontSize: 12,
+                    color: theme.textLight,
+                    fontFamily: Fonts.caption,
+                  }}>
+                    Date: {formatDate(booking.date || booking.createdAt)}
+                  </Text>
+                </View>
+                
+                <View style={{ alignItems: 'flex-end' }}>
                   <View style={{
-                    backgroundColor: getStatusColor(booking.status) + '20',
+                    backgroundColor: getStatusColor(booking.status),
                     paddingHorizontal: 8,
-                    paddingVertical: 4,
-                    borderRadius: 6,
+                    paddingVertical: 2,
+                    borderRadius: 4,
+                    marginBottom: 4,
                   }}>
                     <Text style={{
-                      fontSize: 12,
+                      fontSize: 10,
                       fontWeight: '500',
-                      color: getStatusColor(booking.status),
+                      color: '#FFFFFF',
                       fontFamily: Fonts.caption,
+                      textTransform: 'uppercase',
                     }}>
                       {booking.status}
                     </Text>
                   </View>
+                  <Text style={{
+                    fontSize: 14,
+                    fontWeight: '600',
+                    color: theme.primary,
+                    fontFamily: Fonts.body,
+                  }}>
+                    ${booking.estimatedCost || booking.actualCost || 0}
+                  </Text>
                 </View>
-                
-                <Text style={{
-                  fontSize: 14,
-                  color: theme.textLight,
-                  marginBottom: 4,
-                  fontFamily: Fonts.body,
-                }}>
-                  {booking.provider?.name || 'Provider'}
-                </Text>
-                
-                <Text style={{
-                  fontSize: 14,
-                  color: theme.textLight,
-                  fontFamily: Fonts.body,
-                }}>
-                  {formatDate(booking.scheduledDate)}
-                </Text>
-              </TouchableOpacity>
-            ))
-          ) : (
+              </View>
+            </View>
+          ))}
+          
+          {recentBookings.length === 0 && (
             <View style={{
               backgroundColor: theme.card,
               borderRadius: 12,
@@ -545,46 +555,12 @@ export default function CustomerHome() {
               borderColor: theme.border,
             }}>
               <Text style={{
-                fontSize: 48,
-                marginBottom: 12,
-              }}>
-                📋
-              </Text>
-              <Text style={{
                 fontSize: 16,
-                fontWeight: '500',
-                color: theme.textDark,
-                marginBottom: 8,
-                fontFamily: Fonts.body,
-              }}>
-                No bookings yet
-              </Text>
-              <Text style={{
-                fontSize: 14,
                 color: theme.textLight,
-                textAlign: 'center',
                 fontFamily: Fonts.body,
               }}>
-                Start by searching for services you need
+                No recent bookings
               </Text>
-              <TouchableOpacity
-                onPress={() => router.push('/customer/service-search')}
-                style={{
-                  backgroundColor: theme.primary,
-                  paddingHorizontal: 20,
-                  paddingVertical: 10,
-                  borderRadius: 8,
-                  marginTop: 12,
-                }}
-              >
-                <Text style={{
-                  color: 'white',
-                  fontWeight: '500',
-                  fontFamily: Fonts.body,
-                }}>
-                  Search Services
-                </Text>
-              </TouchableOpacity>
             </View>
           )}
         </View>

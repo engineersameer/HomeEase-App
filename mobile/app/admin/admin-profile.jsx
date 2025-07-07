@@ -2,73 +2,58 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   ScrollView,
-  Image,
   Alert,
   Switch,
   SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
 import { useTheme } from '../../context/ThemeContext';
-import Footer from '../customer/shared/Footer';
-import FloatingInput from '../customer/shared/FloatingInput';
-import { MaterialIcons } from '@expo/vector-icons';
+import FloatingInput from './shared/FloatingInput';
 import { getApiUrl, apiCall, API_CONFIG } from '../../config/api';
+import { MaterialIcons } from '@expo/vector-icons';
 
-export default function CustomerProfile() {
+export default function AdminProfile() {
   const router = useRouter();
   const { theme, isDarkMode, toggleTheme } = useTheme();
-
-  // Profile state
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
-  const [profileImage, setProfileImage] = useState(null);
-  const [editingField, setEditingField] = useState(null); // 'name', 'phone', 'address', 'city', or null
-  const [originalValues, setOriginalValues] = useState({ name: '', phone: '', address: '', city: '' });
-  const [savedField, setSavedField] = useState(null); // for green icon feedback
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
-
-  const cities = [
-    'Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 'Faisalabad', 
-    'Multan', 'Peshawar', 'Quetta', 'Sialkot', 'Gujranwala'
-  ];
+  const [editingField, setEditingField] = useState(null);
+  const [originalValues, setOriginalValues] = useState({ name: '', phone: '' });
+  const [notificationPreferences, setNotificationPreferences] = useState({
+    email: true,
+    push: true,
+    sms: false,
+    marketing: false
+  });
 
   useEffect(() => {
-    fetchUserProfile();
+    loadUserData();
   }, []);
 
-  const fetchUserProfile = async () => {
+  const loadUserData = async () => {
     try {
-      const data = await apiCall(getApiUrl(API_CONFIG.ENDPOINTS.CUSTOMER_PROFILE));
-      
-      // The API returns the user object directly, not nested under 'user'
-      const userData = data.success ? data.user : data; // Handle both response formats
-      
-      setUser(userData);
-      setName(userData.name || '');
-      setEmail(userData.email || '');
-      setPhone(userData.phone || '');
-      setAddress(userData.address || '');
-      setCity(userData.city || '');
-      setProfileImage(userData.profileImage);
-      setOriginalValues({
-        name: userData.name || '',
-        phone: userData.phone || '',
-        address: userData.address || '',
-        city: userData.city || '',
-      });
+      const userData = await AsyncStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        setName(user.name || '');
+        setEmail(user.email || '');
+        setPhone(user.phone || '');
+        setOriginalValues({
+          name: user.name || '',
+          phone: user.phone || '',
+        });
+      }
       setLoading(false);
     } catch (error) {
-      console.log('Error fetching profile:', error);
+      console.log('Error loading user data:', error);
       setLoading(false);
     }
   };
@@ -79,28 +64,26 @@ export default function CustomerProfile() {
       return;
     }
 
+    setSaving(true);
     try {
-      const result = await apiCall(getApiUrl(API_CONFIG.ENDPOINTS.CUSTOMER_PROFILE), {
+      const result = await apiCall(getApiUrl(API_CONFIG.ENDPOINTS.ADMIN_PROFILE), {
         method: 'PUT',
         body: JSON.stringify({
           name,
           phone,
-          address,
-          city
+          notificationPreferences
         })
       });
 
       if (result.success) {
         Alert.alert('Success', 'Profile updated successfully');
-        setOriginalValues({ name, phone, address, city });
+        setOriginalValues({ name, phone });
         // Update the stored user data
         const storedUser = await AsyncStorage.getItem('user');
         if (storedUser) {
           const userData = JSON.parse(storedUser);
           userData.name = name;
           userData.phone = phone;
-          userData.address = address;
-          userData.city = city;
           await AsyncStorage.setItem('user', JSON.stringify(userData));
         }
       } else {
@@ -109,6 +92,8 @@ export default function CustomerProfile() {
     } catch (error) {
       console.error('Update profile error:', error);
       Alert.alert('Error', 'Failed to update profile');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -119,9 +104,14 @@ export default function CustomerProfile() {
   const handleCancelEdit = () => {
     setName(originalValues.name);
     setPhone(originalValues.phone);
-    setAddress(originalValues.address);
-    setCity(originalValues.city);
     setEditingField(null);
+  };
+
+  const toggleNotification = (key) => {
+    setNotificationPreferences(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
   };
 
   const handleLogout = async () => {
@@ -135,6 +125,8 @@ export default function CustomerProfile() {
           style: 'destructive',
           onPress: async () => {
             await AsyncStorage.removeItem('token');
+            await AsyncStorage.removeItem('user');
+            await AsyncStorage.removeItem('userRole');
             router.replace('/');
           }
         }
@@ -144,9 +136,19 @@ export default function CustomerProfile() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.background }}>
-        <Text style={{ color: theme.textDark, fontFamily: Fonts.body }}>Loading...</Text>
-      </View>
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={{ 
+            marginTop: 16, 
+            color: theme.textDark, 
+            fontFamily: Fonts.body,
+            fontSize: 16
+          }}>
+            Loading profile...
+          </Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -155,7 +157,7 @@ export default function CustomerProfile() {
       {/* Header (fixed at top) */}
       <View style={{
         backgroundColor: theme.card,
-        paddingTop: 51,
+        paddingTop: 60,
         paddingBottom: 25,
         paddingHorizontal: 24,
         borderBottomWidth: 1,
@@ -183,14 +185,7 @@ export default function CustomerProfile() {
               borderColor: theme.border,
               marginBottom: 15
             }}>
-              {profileImage ? (
-                <Image
-                  source={{ uri: profileImage }}
-                  style={{ width: 96, height: 96, borderRadius: 48 }}
-                />
-              ) : (
-                <Text style={{ fontSize: 40, color: theme.textLight }}>👤</Text>
-              )}
+              <Text style={{ fontSize: 40, color: theme.textLight }}>👤</Text>
             </View>
           </View>
           {/* Profile Form */}
@@ -245,71 +240,51 @@ export default function CustomerProfile() {
                 />
               </TouchableOpacity>
             </View>
-            {/* Address */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-              <View style={{ flex: 1 }}>
-                <FloatingInput label="Address" value={address} onChangeText={setAddress} theme={theme} editable={editingField === 'address'} inputStyle={{ color: theme.textDark }} />
-              </View>
-              <TouchableOpacity
-                onPress={() => setEditingField('address')}
-                style={{ marginLeft: 8 }}
-                disabled={editingField === 'address'}
-              >
-                <MaterialIcons
-                  name="edit"
-                  size={22}
-                  color={editingField === 'address' ? theme.primary : theme.textDark}
-                />
-              </TouchableOpacity>
-            </View>
-            {/* City */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-              <View style={{ flex: 1 }}>
-                <FloatingInput label="City" value={city} onChangeText={setCity} theme={theme} editable={editingField === 'city'} inputStyle={{ color: theme.textDark }} />
-              </View>
-              <TouchableOpacity
-                onPress={() => setEditingField('city')}
-                style={{ marginLeft: 8 }}
-                disabled={editingField === 'city'}
-              >
-                <MaterialIcons
-                  name="edit"
-                  size={22}
-                  color={editingField === 'city' ? theme.primary : theme.textDark}
-                />
-              </TouchableOpacity>
-            </View>
           </View>
           {/* Save/Cancel Buttons for the field being edited */}
           {editingField && (
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, marginBottom: 5 }}>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
               <TouchableOpacity
-                style={{ backgroundColor: theme.primary, padding: 12, borderRadius: 8, flex: 1, marginRight: 8 }}
+                style={{
+                  backgroundColor: theme.primary,
+                  borderRadius: 20,
+                  paddingVertical: 10,
+                  flex: 1,
+                  alignItems: 'center',
+                }}
                 onPress={handleUpdateProfile}
               >
-                <Text style={{ color: '#fff', fontFamily: Fonts.body, textAlign: 'center' }}>Save</Text>
+                <Text style={{ color: '#fff', fontFamily: Fonts.body, fontSize: 15, fontWeight: '600' }}>Save</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={{ backgroundColor: theme.card, padding: 12, borderRadius: 8, flex: 1, marginLeft: 8, borderWidth: 1, borderColor: theme.border }}
+                style={{
+                  backgroundColor: theme.card,
+                  borderRadius: 20,
+                  paddingVertical: 10,
+                  flex: 1,
+                  alignItems: 'center',
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                }}
                 onPress={handleCancelEdit}
               >
-                <Text style={{ color: theme.textDark, fontFamily: Fonts.body, textAlign: 'center' }}>Cancel</Text>
+                <Text style={{ color: theme.textDark, fontFamily: Fonts.body, fontSize: 15, fontWeight: '600' }}>Cancel</Text>
               </TouchableOpacity>
             </View>
           )}
           <TouchableOpacity
             onPress={handleLogout}
             style={{
-              backgroundColor: theme.card,
-              borderRadius: 12,
-              paddingVertical: 14,
+              backgroundColor: theme.background,
+              borderRadius: 20,
+              paddingVertical: 12,
               alignItems: 'center',
               borderWidth: 1,
               borderColor: theme.border,
               marginTop: 32,
             }}
           >
-            <Text style={{ fontSize: 16, color: theme.textDark, fontFamily: Fonts.subheading }}>
+            <Text style={{ fontSize: 16, color: theme.textDark, fontFamily: Fonts.subheading, fontWeight: '600' }}>
               Logout
             </Text>
           </TouchableOpacity>

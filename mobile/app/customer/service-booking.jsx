@@ -11,6 +11,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, Fonts } from '../../Color/Color';
+import { getApiUrl, getApiUrlWithParams, apiCall, API_CONFIG } from '../../config/api';
 
 export default function ServiceBooking() {
   const router = useRouter();
@@ -68,7 +69,7 @@ export default function ServiceBooking() {
     loadThemePreference();
     if (params.serviceId) {
       // Load service details
-      loadServiceDetails();
+      fetchServiceDetails();
     }
   }, [params.serviceId]);
 
@@ -81,9 +82,14 @@ export default function ServiceBooking() {
     }
   };
 
-  const loadServiceDetails = () => {
-    // Simulate loading service details
-    setEstimatedCost(800);
+  const fetchServiceDetails = async () => {
+    try {
+      const url = getApiUrlWithParams(API_CONFIG.ENDPOINTS.CUSTOMER_SERVICE_DETAIL, { serviceId: params.serviceId });
+      const data = await apiCall(url);
+      setEstimatedCost(data.service.price);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to fetch service details');
+    }
   };
 
   const handleBooking = async () => {
@@ -95,8 +101,18 @@ export default function ServiceBooking() {
     setLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await apiCall(getApiUrl(API_CONFIG.ENDPOINTS.CUSTOMER_BOOKINGS), {
+        method: 'POST',
+        body: JSON.stringify({
+          serviceId: params.serviceId,
+          providerId: selectedProvider.id,
+          date: selectedDate,
+          time: selectedTime,
+          address: '',
+          description: serviceDescription.trim(),
+          estimatedCost: estimatedCost
+        })
+      });
 
       Alert.alert(
         'Booking Confirmed!',

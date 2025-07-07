@@ -1,49 +1,150 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView, Image, StatusBar } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  SafeAreaView,
+  StatusBar,
+  ActivityIndicator,
+  Image
+} from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { Fonts } from '../../Color/Color';
-import axios from 'axios';
+import { getApiUrl, apiCall, API_CONFIG } from '../../config/api';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 import ProviderFooter from './shared/Footer';
 
 export default function RegisterService() {
   const { theme, isDarkMode, toggleTheme } = useTheme();
-  const [services, setServices] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(null);
+  const [serviceData, setServiceData] = useState({
+    title: '',
+    category: '',
+    description: '',
+    price: '',
+    location: '',
+    availability: {
+      monday: { available: true, startTime: '09:00', endTime: '17:00' },
+      tuesday: { available: true, startTime: '09:00', endTime: '17:00' },
+      wednesday: { available: true, startTime: '09:00', endTime: '17:00' },
+      thursday: { available: true, startTime: '09:00', endTime: '17:00' },
+      friday: { available: true, startTime: '09:00', endTime: '17:00' },
+      saturday: { available: true, startTime: '09:00', endTime: '17:00' },
+      sunday: { available: false, startTime: '09:00', endTime: '17:00' }
+    },
+    tags: [],
+    images: []
+  });
+
+  const categories = [
+    'Electrical',
+    'Plumbing',
+    'Cleaning',
+    'Carpentry',
+    'Painting',
+    'Gardening',
+    'Moving',
+    'Repair',
+    'Installation',
+    'Maintenance',
+    'Other'
+  ];
+
+  const cities = [
+    'Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 'Faisalabad',
+    'Multan', 'Peshawar', 'Quetta', 'Sialkot', 'Gujranwala'
+  ];
 
   useEffect(() => {
-    fetchServices();
-    (async () => {
-      const userData = await AsyncStorage.getItem('user');
-      if (userData) setUser(JSON.parse(userData));
-    })();
+    loadUserData();
   }, []);
 
-  const fetchServices = async () => {
-    setLoading(true);
+  const loadUserData = async () => {
     try {
-      const res = await axios.get('http://192.168.100.5:5000/api/provider/services');
-      setServices(res.data);
-    } catch (err) {
-      setServices([]);
+      const userData = await AsyncStorage.getItem('user');
+      if (userData) {
+        const parsedUser = JSON.parse(userData);
+        if (parsedUser.role !== 'provider') {
+          Alert.alert('Access Denied', 'You do not have provider privileges.');
+          router.replace('/');
+          return;
+        }
+        setUser(parsedUser);
+      }
+    } catch (error) {
+      console.log('Error loading user data:', error);
     }
-    setLoading(false);
   };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchServices();
-    setRefreshing(false);
+  const createService = async () => {
+    if (!serviceData.title.trim() || !serviceData.category || !serviceData.description.trim() || !serviceData.price || !serviceData.location) {
+      Alert.alert('Error', 'Please fill in all required fields');
+      return;
+    }
+
+    if (isNaN(serviceData.price) || parseFloat(serviceData.price) <= 0) {
+      Alert.alert('Error', 'Please enter a valid price');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const servicePayload = {
+        ...serviceData,
+        price: parseFloat(serviceData.price),
+        providerId: user._id
+      };
+
+      await apiCall(getApiUrl(API_CONFIG.ENDPOINTS.PROVIDER_SERVICE_CREATE), {
+        method: 'POST',
+        body: JSON.stringify(servicePayload)
+      });
+
+      Alert.alert('Success', 'Service created successfully!', [
+        {
+          text: 'OK',
+          onPress: () => router.push('/provider/provider-orders')
+        }
+      ]);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to create service. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateServiceData = (field, value) => {
+    setServiceData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const updateAvailability = (day, field, value) => {
+    setServiceData(prev => ({
+      ...prev,
+      availability: {
+        ...prev.availability,
+        [day]: {
+          ...prev.availability[day],
+          [field]: value
+        }
+      }
+    }));
   };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.background} />
-      {/* Custom Header for Register for Service */}
+      
+      {/* Header */}
       <View style={{
         backgroundColor: theme.card,
         paddingTop: 45,
@@ -55,78 +156,254 @@ export default function RegisterService() {
         alignItems: 'center',
       }}>
         <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 12 }}>
-          <Text style={{ fontSize: 22, color: theme.textDark }}>{'←'}</Text>
+          <Ionicons name="arrow-back" size={24} color={theme.textDark} />
         </TouchableOpacity>
         <View>
           <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.textDark, fontFamily: Fonts.heading }}>
-            Register for Service
+            Create Service
           </Text>
           <Text style={{ fontSize: 12, color: theme.textLight, fontFamily: Fonts.caption }}>
-            Browse and register for available services
+            Register your service to start receiving bookings
           </Text>
         </View>
       </View>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24, paddingBottom: 80 }}>
-        <Text style={{
-          fontSize: 24,
-          fontWeight: 'bold',
-          color: theme.textDark,
-          fontFamily: Fonts.heading,
-          marginBottom: 24,
-        }}>
-          Register for a Service
-        </Text>
-        {loading ? (
-          <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 40 }} />
-        ) : services.length === 0 ? (
-          <Text style={{ color: theme.textLight, fontFamily: Fonts.body, textAlign: 'center', marginTop: 40 }}>
-            No services available at the moment.
+
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24, paddingBottom: 100 }}>
+        {/* Service Information */}
+        <View style={{ marginBottom: 24 }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.textDark, fontFamily: Fonts.heading, marginBottom: 16 }}>
+            Service Information
           </Text>
-        ) : (
-          services.map(service => (
-            <View
-              key={service._id}
+
+          {/* Service Title */}
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: theme.textDark, fontFamily: Fonts.subheading, marginBottom: 8 }}>
+              Service Title *
+            </Text>
+            <TextInput
               style={{
                 backgroundColor: theme.card,
-                borderRadius: 12,
-                padding: 20,
-                marginBottom: 18,
                 borderWidth: 1,
                 borderColor: theme.border,
-                shadowColor: '#000',
-                shadowOpacity: 0.04,
-                shadowRadius: 4,
-                elevation: 2,
+                borderRadius: 8,
+                padding: 12,
+                color: theme.textDark,
+                fontFamily: Fonts.body
               }}
-            >
-              <Text style={{ fontSize: 18, fontWeight: '600', color: theme.textDark, fontFamily: Fonts.subheading, marginBottom: 6 }}>
-                {service.category}
-              </Text>
-              <Text style={{ color: theme.textLight, fontFamily: Fonts.body, marginBottom: 10 }}>
-                {service.description}
-              </Text>
-              <Text style={{ color: theme.textLight, fontFamily: Fonts.caption, fontSize: 12, marginBottom: 10 }}>
-                Service ID: {service._id}
-              </Text>
-              <TouchableOpacity
-                style={{
-                  backgroundColor: theme.primary,
-                  paddingVertical: 10,
-                  borderRadius: 8,
-                  alignItems: 'center',
-                  marginTop: 4,
-                }}
-                onPress={() => alert('Registration flow coming soon!')}
-              >
-                <Text style={{ color: '#fff', fontWeight: 'bold', fontFamily: Fonts.body }}>
-                  Register for this Service
+              placeholder="e.g., Professional Electrical Repair"
+              placeholderTextColor={theme.textLight}
+              value={serviceData.title}
+              onChangeText={(text) => updateServiceData('title', text)}
+            />
+          </View>
+
+          {/* Category */}
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: theme.textDark, fontFamily: Fonts.subheading, marginBottom: 8 }}>
+              Category *
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+              {categories.map((category) => (
+                <TouchableOpacity
+                  key={category}
+                  style={{
+                    backgroundColor: serviceData.category === category ? theme.primary : theme.card,
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: 20,
+                    marginRight: 8,
+                    borderWidth: 1,
+                    borderColor: theme.border
+                  }}
+                  onPress={() => updateServiceData('category', category)}
+                >
+                  <Text style={{
+                    color: serviceData.category === category ? '#fff' : theme.textDark,
+                    fontFamily: Fonts.body,
+                    fontSize: 12
+                  }}>
+                    {category}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* Description */}
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: theme.textDark, fontFamily: Fonts.subheading, marginBottom: 8 }}>
+              Description *
+            </Text>
+            <TextInput
+              style={{
+                backgroundColor: theme.card,
+                borderWidth: 1,
+                borderColor: theme.border,
+                borderRadius: 8,
+                padding: 12,
+                color: theme.textDark,
+                fontFamily: Fonts.body,
+                height: 100,
+                textAlignVertical: 'top'
+              }}
+              placeholder="Describe your service in detail..."
+              placeholderTextColor={theme.textLight}
+              value={serviceData.description}
+              onChangeText={(text) => updateServiceData('description', text)}
+              multiline
+            />
+          </View>
+
+          {/* Price */}
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: theme.textDark, fontFamily: Fonts.subheading, marginBottom: 8 }}>
+              Price (PKR) *
+            </Text>
+            <TextInput
+              style={{
+                backgroundColor: theme.card,
+                borderWidth: 1,
+                borderColor: theme.border,
+                borderRadius: 8,
+                padding: 12,
+                color: theme.textDark,
+                fontFamily: Fonts.body
+              }}
+              placeholder="Enter your service price"
+              placeholderTextColor={theme.textLight}
+              value={serviceData.price}
+              onChangeText={(text) => updateServiceData('price', text)}
+              keyboardType="numeric"
+            />
+          </View>
+
+          {/* Location */}
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: theme.textDark, fontFamily: Fonts.subheading, marginBottom: 8 }}>
+              Service Location *
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+              {cities.map((city) => (
+                <TouchableOpacity
+                  key={city}
+                  style={{
+                    backgroundColor: serviceData.location === city ? theme.primary : theme.card,
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: 20,
+                    marginRight: 8,
+                    borderWidth: 1,
+                    borderColor: theme.border
+                  }}
+                  onPress={() => updateServiceData('location', city)}
+                >
+                  <Text style={{
+                    color: serviceData.location === city ? '#fff' : theme.textDark,
+                    fontFamily: Fonts.body,
+                    fontSize: 12
+                  }}>
+                    {city}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+
+        {/* Availability */}
+        <View style={{ marginBottom: 24 }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.textDark, fontFamily: Fonts.heading, marginBottom: 16 }}>
+            Availability
+          </Text>
+          {Object.keys(serviceData.availability).map((day) => (
+            <View key={day} style={{ marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                <TouchableOpacity
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: 4,
+                    borderWidth: 2,
+                    borderColor: theme.border,
+                    backgroundColor: serviceData.availability[day].available ? theme.primary : 'transparent',
+                    marginRight: 12,
+                    justifyContent: 'center',
+                    alignItems: 'center'
+                  }}
+                  onPress={() => updateAvailability(day, 'available', !serviceData.availability[day].available)}
+                >
+                  {serviceData.availability[day].available && (
+                    <Ionicons name="checkmark" size={14} color="#fff" />
+                  )}
+                </TouchableOpacity>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: theme.textDark, fontFamily: Fonts.subheading, textTransform: 'capitalize' }}>
+                  {day}
                 </Text>
-              </TouchableOpacity>
+              </View>
+              {serviceData.availability[day].available && (
+                <View style={{ flexDirection: 'row', marginLeft: 32 }}>
+                  <TextInput
+                    style={{
+                      backgroundColor: theme.card,
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      borderRadius: 8,
+                      padding: 8,
+                      color: theme.textDark,
+                      fontFamily: Fonts.body,
+                      flex: 1,
+                      marginRight: 8
+                    }}
+                    value={serviceData.availability[day].startTime}
+                    onChangeText={(text) => updateAvailability(day, 'startTime', text)}
+                    placeholder="09:00"
+                  />
+                  <Text style={{ alignSelf: 'center', marginHorizontal: 8, color: theme.textLight }}>to</Text>
+                  <TextInput
+                    style={{
+                      backgroundColor: theme.card,
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      borderRadius: 8,
+                      padding: 8,
+                      color: theme.textDark,
+                      fontFamily: Fonts.body,
+                      flex: 1,
+                      marginLeft: 8
+                    }}
+                    value={serviceData.availability[day].endTime}
+                    onChangeText={(text) => updateAvailability(day, 'endTime', text)}
+                    placeholder="17:00"
+                  />
+                </View>
+              )}
             </View>
-          ))
-        )}
+          ))}
+        </View>
+
+        {/* Create Service Button */}
+        <TouchableOpacity
+          style={{
+            backgroundColor: theme.primary,
+            paddingVertical: 16,
+            borderRadius: 12,
+            alignItems: 'center',
+            marginTop: 16
+          }}
+          onPress={createService}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={{ color: '#fff', fontWeight: 'bold', fontFamily: Fonts.body, fontSize: 16 }}>
+              Create Service
+            </Text>
+          )}
+        </TouchableOpacity>
       </ScrollView>
-      <ProviderFooter theme={theme} router={router} current={null} />
+
+      <ProviderFooter theme={theme} router={router} current="register" />
     </SafeAreaView>
   );
 } 

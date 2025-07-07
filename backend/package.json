@@ -19,6 +19,7 @@
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.16.0",
+    "pdfkit": "^0.17.1",
     "react-native-reanimated": "^3.18.0"
   },
   "devDependencies": {

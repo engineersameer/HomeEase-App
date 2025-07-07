@@ -13,12 +13,10 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
-import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
+import { getApiUrl, apiCall, API_CONFIG } from '../../config/api';
 import FloatingInput from '../provider/shared/FloatingInput';
 import Button from '../provider/shared/Button';
-
-const API_URL = 'http://192.168.100.5:5000/api/auth/signup';
 
 export default function SellerSignup() {
   const router = useRouter();
@@ -29,13 +27,9 @@ export default function SellerSignup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [profession, setProfession] = useState('');
-  const [experience, setExperience] = useState('');
-  const [pricing, setPricing] = useState('');
-  const [certifications, setCertifications] = useState('');
-  const [cnic, setCnic] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
-  const [availability, setAvailability] = useState('');
   const [bio, setBio] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -44,14 +38,8 @@ export default function SellerSignup() {
     'Multan', 'Peshawar', 'Quetta', 'Sialkot', 'Gujranwala'
   ];
 
-  const professions = [
-    'Electrician', 'Plumber', 'Carpenter', 'Painter', 'Cleaner',
-    'AC Technician', 'Appliance Repair', 'Gardener', 'Security Guard',
-    'Cook', 'Driver', 'Other'
-  ];
-
   const validateForm = () => {
-    if (!name || !email || !password || !confirmPassword || !profession || !experience || !pricing || !city) {
+    if (!name || !email || !password || !confirmPassword || !phone || !city) {
       Alert.alert('Error', 'Please fill in all required fields');
       return false;
     }
@@ -63,11 +51,6 @@ export default function SellerSignup() {
     
     if (password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match');
-      return false;
-    }
-    
-    if (isNaN(experience) || isNaN(pricing)) {
-      Alert.alert('Error', 'Experience and pricing must be numbers');
       return false;
     }
     
@@ -84,24 +67,31 @@ export default function SellerSignup() {
         email,
         password,
         role: 'provider',
-        profession,
-        experience: parseInt(experience),
-        pricing: parseInt(pricing),
-        certifications,
-        cnic,
+        phone,
+        address,
         city,
-        availability,
         bio,
+        approvalStatus: 'pending'
       };
 
-      const response = await axios.post(API_URL, userData);
+      const response = await apiCall(getApiUrl(API_CONFIG.ENDPOINTS.PROVIDER_SIGNUP), {
+        method: 'POST',
+        body: JSON.stringify(userData)
+      });
 
-      if (response.status === 201) {
-        Alert.alert('Success', 'Seller account created successfully!');
-        router.replace('/provider-signin');
+      if (response.success) {
+        Alert.alert('Success', 'Provider account created successfully! Please wait for admin approval.', [
+          {
+            text: 'OK',
+            onPress: () => router.replace('/provider-signin')
+          }
+        ]);
+      } else {
+        Alert.alert('Error', response.message || 'Signup failed');
       }
-    } catch (err) {
-      Alert.alert('Error', err.response?.data?.message || 'Signup failed');
+    } catch (error) {
+      console.error('Signup error:', error);
+      Alert.alert('Error', 'Failed to create account. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -140,7 +130,7 @@ export default function SellerSignup() {
             marginBottom: 10,
             letterSpacing: -0.5,
           }}>
-            Become a Seller
+            Become a Service Provider
           </Text>
           <Text style={{ 
             fontSize: 15,
@@ -166,27 +156,23 @@ export default function SellerSignup() {
           <FloatingInput label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
           <FloatingInput label="Password (min 6 characters)" value={password} onChangeText={setPassword} secureTextEntry />
           <FloatingInput label="Confirm Password" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry />
-          <FloatingInput label="Profession" value={profession} onChangeText={setProfession} />
-          <FloatingInput label="Experience (years)" value={experience} onChangeText={setExperience} keyboardType="numeric" />
-          <FloatingInput label="Pricing (PKR)" value={pricing} onChangeText={setPricing} keyboardType="numeric" />
-          <FloatingInput label="Certifications" value={certifications} onChangeText={setCertifications} />
-          <FloatingInput label="CNIC" value={cnic} onChangeText={setCnic} />
+          <FloatingInput label="Phone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+          <FloatingInput label="Address" value={address} onChangeText={setAddress} />
           <FloatingInput label="City" value={city} onChangeText={setCity} />
-          <FloatingInput label="Availability" value={availability} onChangeText={setAvailability} />
-          <FloatingInput label="Bio" value={bio} onChangeText={setBio} />
+          <FloatingInput label="Bio (Optional)" value={bio} onChangeText={setBio} multiline />
         </View>
 
         {/* Minimal Buttons and Link */}
         <View style={{ marginHorizontal: 32, alignItems: 'center' }}>
           <Button
-            title={loading ? 'Creating Seller Account...' : 'Create Account'}
+            title={loading ? 'Creating Account...' : 'Create Provider Account'}
             onPress={handleSignup}
             loading={loading}
             variant="primary"
             style={{ marginBottom: 10, width: '100%' }}
           />
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-            <Text style={{ fontSize: 14, color: theme.textLight, fontFamily: Fonts.body }}>Already a seller? </Text>
+            <Text style={{ fontSize: 14, color: theme.textLight, fontFamily: Fonts.body }}>Already a provider? </Text>
             <Text
               style={{ fontSize: 14, color: theme.accent, fontFamily: Fonts.body, textDecorationLine: 'underline' }}
               onPress={() => router.push('/provider-signin')}

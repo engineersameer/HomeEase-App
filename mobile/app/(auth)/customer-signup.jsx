@@ -13,12 +13,10 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
-import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
+import { getApiUrl, apiCall, API_CONFIG } from '../../config/api';
 import FloatingInput from '../customer/shared/FloatingInput';
 import Button from '../customer/shared/Button';
-
-const API_URL = 'http://192.168.100.5:5000/api/auth/signup';
 
 export default function CustomerSignup() {
   const router = useRouter();
@@ -73,14 +71,24 @@ export default function CustomerSignup() {
         city,
       };
 
-      const response = await axios.post(API_URL, userData);
+      const response = await apiCall(getApiUrl(API_CONFIG.ENDPOINTS.CUSTOMER_SIGNUP), {
+        method: 'POST',
+        body: JSON.stringify(userData)
+      });
 
-      if (response.status === 201) {
-        Alert.alert('Success', 'Account created successfully!');
-        router.replace('/customer-signin');
+      if (response.success) {
+        Alert.alert('Success', 'Account created successfully!', [
+          {
+            text: 'OK',
+            onPress: () => router.replace('/customer-signin')
+          }
+        ]);
+      } else {
+        Alert.alert('Error', response.message || 'Signup failed');
       }
-    } catch (err) {
-      Alert.alert('Error', err.response?.data?.message || 'Signup failed');
+    } catch (error) {
+      console.error('Signup error:', error);
+      Alert.alert('Error', 'Failed to create account. Please try again.');
     } finally {
       setLoading(false);
     }

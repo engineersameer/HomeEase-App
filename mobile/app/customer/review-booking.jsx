@@ -13,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
 import { useTheme } from '../../context/ThemeContext';
+import { getApiUrl, getApiUrlWithParams, apiCall, API_CONFIG } from '../../config/api';
 
 const API_URL = 'http://192.168.100.5:5000/api/customer/reviews';
 
@@ -32,65 +33,34 @@ export default function ReviewBooking() {
 
   const fetchBookingDetails = async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      const response = await axios.get(`http://192.168.100.5:5000/api/customer/bookings/${params.bookingId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setBooking(response.data);
+      const url = getApiUrlWithParams(API_CONFIG.ENDPOINTS.CUSTOMER_BOOKING_DETAIL, { bookingId: params.bookingId });
+      const data = await apiCall(url);
+      setBooking(data.booking);
     } catch (error) {
-      console.log('Error fetching booking details:', error);
-      // Use mock data for now
-      setBooking({
-        _id: params.bookingId,
-        provider: {
-          name: 'Ahmed Electrician',
-          image: 'https://via.placeholder.com/100'
-        },
-        service: {
-          category: 'Electrical',
-          title: 'Electrical Wiring Repair'
-        },
-        date: new Date(),
-        estimatedCost: 800
-      });
-    } finally {
-      setLoading(false);
+      Alert.alert('Error', 'Failed to fetch booking details');
     }
   };
 
-  const handleSubmitReview = async () => {
-    if (rating === 0) {
-      Alert.alert('Error', 'Please select a rating');
-      return;
-    }
-
-    if (!comment.trim()) {
-      Alert.alert('Error', 'Please write a review comment');
+  const submitReview = async () => {
+    if (!rating || !comment.trim()) {
+      Alert.alert('Error', 'Please provide both rating and comment');
       return;
     }
 
     try {
-      const token = await AsyncStorage.getItem('token');
-      const reviewData = {
-        bookingId: params.bookingId,
-        rating,
-        comment: comment.trim(),
-        providerId: booking.provider._id
-      };
-
-      await axios.post(API_URL, reviewData, {
-        headers: { Authorization: `Bearer ${token}` }
+      await apiCall(getApiUrl(API_CONFIG.ENDPOINTS.CUSTOMER_REVIEWS), {
+        method: 'POST',
+        body: JSON.stringify({
+          bookingId: params.bookingId,
+          rating,
+          comment,
+          providerId: booking.provider._id
+        })
       });
-
-      Alert.alert('Success', 'Review submitted successfully!', [
-        {
-          text: 'OK',
-          onPress: () => router.back()
-        }
-      ]);
+      Alert.alert('Success', 'Review submitted successfully');
+      router.back();
     } catch (error) {
-      console.log('Error submitting review:', error);
-      Alert.alert('Error', 'Failed to submit review. Please try again.');
+      Alert.alert('Error', 'Failed to submit review');
     }
   };
 
@@ -281,7 +251,7 @@ export default function ReviewBooking() {
 
         {/* Submit Button */}
         <TouchableOpacity
-          onPress={handleSubmitReview}
+          onPress={submitReview}
           style={{
             backgroundColor: theme.primary,
             paddingVertical: 16,

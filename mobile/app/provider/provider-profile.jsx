@@ -16,6 +16,7 @@ import { Colors, Fonts } from '../../Color/Color';
 import { useTheme } from '../../context/ThemeContext';
 import FloatingInput from './shared/FloatingInput';
 import { MaterialIcons } from '@expo/vector-icons';
+import { getApiUrl, apiCall, API_CONFIG } from '../../config/api';
 
 const API_URL = 'http://192.168.100.5:5000/api/auth/profile';
 
@@ -40,6 +41,7 @@ export default function ProviderProfile() {
   const [originalValues, setOriginalValues] = useState({});
   const [savedField, setSavedField] = useState(null); // for green icon feedback
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState({});
 
   const cities = [
     'Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 'Faisalabad', 
@@ -47,44 +49,63 @@ export default function ProviderProfile() {
   ];
 
   useEffect(() => {
-    fetchProfile();
+    fetchUserProfile();
   }, []);
 
-  const fetchProfile = async () => {
+  const fetchUserProfile = async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      const response = await axios.get(API_URL, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const user = response.data;
-      setName(user.name || '');
-      setEmail(user.email || '');
-      setPhone(user.phone || '');
-      setCity(user.city || '');
-      setProfession(user.profession || '');
-      setExperience(user.experience ? String(user.experience) : '');
-      setPricing(user.pricing ? String(user.pricing) : '');
-      setCertifications(user.certifications || '');
-      setCnic(user.cnic || '');
-      setAvailability(user.availability || '');
-      setBio(user.bio || '');
-      setProfileImage(user.profileImage);
+      const data = await apiCall(getApiUrl(API_CONFIG.ENDPOINTS.AUTH_PROFILE));
+      
+      // The API returns the user object directly, not nested under 'user'
+      const userData = data.success ? data : data; // Handle both response formats
+      
+      setUser(userData);
+      setName(userData.name || '');
+      setEmail(userData.email || '');
+      setPhone(userData.phone || '');
+      setCity(userData.city || '');
+      setProfession(userData.profession || '');
+      setExperience(userData.experience ? String(userData.experience) : '');
+      setPricing(userData.pricing ? String(userData.pricing) : '');
+      setCertifications(userData.certifications || '');
+      setCnic(userData.cnic || '');
+      setAvailability(userData.availability || '');
+      setBio(userData.bio || '');
+      setProfileImage(userData.profileImage);
       setOriginalValues({
-        name: user.name || '',
-        phone: user.phone || '',
-        city: user.city || '',
-        profession: user.profession || '',
-        experience: user.experience ? String(user.experience) : '',
-        pricing: user.pricing ? String(user.pricing) : '',
-        certifications: user.certifications || '',
-        cnic: user.cnic || '',
-        availability: user.availability || '',
-        bio: user.bio || '',
+        name: userData.name || '',
+        phone: userData.phone || '',
+        city: userData.city || '',
+        profession: userData.profession || '',
+        experience: userData.experience ? String(userData.experience) : '',
+        pricing: userData.pricing ? String(userData.pricing) : '',
+        certifications: userData.certifications || '',
+        cnic: userData.cnic || '',
+        availability: userData.availability || '',
+        bio: userData.bio || '',
       });
       setLoading(false);
     } catch (error) {
       console.log('Error fetching profile:', error);
       setLoading(false);
+    }
+  };
+
+  const updateProfile = async () => {
+    if (!user.name.trim() || !user.email.trim()) {
+      Alert.alert('Error', 'Name and email are required');
+      return;
+    }
+
+    try {
+      await apiCall(getApiUrl(API_CONFIG.ENDPOINTS.AUTH_PROFILE), {
+        method: 'PUT',
+        body: JSON.stringify(user)
+      });
+      Alert.alert('Success', 'Profile updated successfully');
+      await AsyncStorage.setItem('user', JSON.stringify(user));
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update profile');
     }
   };
 

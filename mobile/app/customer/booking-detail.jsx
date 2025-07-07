@@ -12,6 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
 import { useTheme } from '../../context/ThemeContext';
+import { getApiUrl, getApiUrlWithParams, apiCall, API_CONFIG } from '../../config/api';
 
 const API_URL = 'http://192.168.100.5:5000/api/customer/bookings';
 
@@ -28,35 +29,26 @@ export default function BookingDetail() {
   }, []);
 
   const fetchBookingDetails = async () => {
+    setLoading(true);
     try {
-      const token = await AsyncStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/${params.bookingId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setBooking(response.data);
+      const url = getApiUrlWithParams(API_CONFIG.ENDPOINTS.CUSTOMER_BOOKING_DETAIL, { bookingId: params.bookingId });
+      const data = await apiCall(url);
+      setBooking(data.booking);
     } catch (error) {
-      setBooking({
-        _id: params.bookingId,
-        provider: {
-          name: 'Ahmed Electrician',
-          image: 'https://via.placeholder.com/100',
-          phone: '+92 300 1234567',
-          email: 'ahmed@example.com',
-          rating: 4.5
-        },
-        service: {
-          category: 'Electrical',
-          title: 'Electrical Wiring Repair'
-        },
-        date: new Date(),
-        status: 'pending',
-        description: 'Fix electrical wiring in kitchen',
-        estimatedCost: 800,
-        location: 'Lahore, Pakistan',
-        notes: 'Please bring necessary tools and arrive on time.'
-      });
+      Alert.alert('Error', 'Failed to fetch booking details');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const cancelBooking = async () => {
+    try {
+      const url = getApiUrlWithParams(API_CONFIG.ENDPOINTS.CUSTOMER_BOOKING_CANCEL, { bookingId: params.bookingId });
+      await apiCall(url, { method: 'PUT' });
+      Alert.alert('Success', 'Booking cancelled successfully');
+      router.back();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to cancel booking');
     }
   };
 
