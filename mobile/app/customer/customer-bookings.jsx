@@ -14,6 +14,7 @@ import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
 import Footer from '../customer/shared/Footer';
 import { useTheme } from '../../context/ThemeContext';
+import { getApiUrl, apiCall, API_CONFIG } from '../../config/api';
 
 const API_URL = 'http://192.168.100.5:5000/api/customer/bookings';
 
@@ -48,46 +49,14 @@ export default function CustomerBookings() {
   }, []);
 
   const fetchBookings = async () => {
+    setLoading(true);
     try {
-      const token = await AsyncStorage.getItem('token');
-      const response = await axios.get(API_URL, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setBookings(response.data);
+      const data = await apiCall(getApiUrl(API_CONFIG.ENDPOINTS.CUSTOMER_BOOKINGS));
+      setBookings(data.bookings || []);
     } catch (error) {
-      setBookings([
-        {
-          _id: '1',
-          provider: {
-            name: 'Ahmed Electrician',
-            image: 'https://via.placeholder.com/100'
-          },
-          service: {
-            category: 'Electrical'
-          },
-          date: new Date(),
-          status: 'pending',
-          description: 'Fix electrical wiring in kitchen',
-          estimatedCost: 800
-        },
-        {
-          _id: '2',
-          provider: {
-            name: 'Ali Plumber',
-            image: 'https://via.placeholder.com/100'
-          },
-          service: {
-            category: 'Plumbing'
-          },
-          date: new Date(Date.now() - 86400000),
-          status: 'completed',
-          description: 'Fix leaking tap in bathroom',
-          estimatedCost: 600
-        }
-      ]);
+      Alert.alert('Error', 'Failed to fetch bookings');
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
@@ -125,6 +94,17 @@ export default function CustomerBookings() {
   const filteredBookings = bookings.filter(booking => 
     selectedStatus === 'all' || booking.status === selectedStatus
   );
+
+  const cancelBooking = async (bookingId) => {
+    try {
+      const url = getApiUrlWithParams(API_CONFIG.ENDPOINTS.CUSTOMER_BOOKING_CANCEL, { bookingId });
+      await apiCall(url, { method: 'PUT' });
+      Alert.alert('Success', 'Booking cancelled successfully');
+      fetchBookings();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to cancel booking');
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>

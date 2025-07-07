@@ -13,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
 import { useTheme } from '../../context/ThemeContext';
+import { getApiUrl, apiCall, API_CONFIG } from '../../config/api';
 
 const API_URL = 'http://192.168.100.5:5000/api/customer/notifications';
 
@@ -29,47 +30,14 @@ export default function CustomerNotifications() {
   }, []);
 
   const fetchNotifications = async () => {
+    setLoading(true);
     try {
-      const token = await AsyncStorage.getItem('token');
-      const response = await axios.get(API_URL, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setNotifications(response.data);
+      const data = await apiCall(getApiUrl(API_CONFIG.ENDPOINTS.CUSTOMER_NOTIFICATIONS));
+      setNotifications(data.notifications || []);
     } catch (error) {
-      console.log('Error fetching notifications:', error);
-      // Use mock data for now
-      setNotifications([
-        {
-          _id: '1',
-          type: 'booking_update',
-          title: 'Booking Accepted',
-          message: 'Your electrical service booking has been accepted by Ahmed Electrician',
-          timestamp: new Date(),
-          read: false,
-          bookingId: '1'
-        },
-        {
-          _id: '2',
-          type: 'payment_success',
-          title: 'Payment Successful',
-          message: 'Payment of PKR 800 has been processed successfully',
-          timestamp: new Date(Date.now() - 3600000),
-          read: true,
-          bookingId: '1'
-        },
-        {
-          _id: '3',
-          type: 'service_completed',
-          title: 'Service Completed',
-          message: 'Your plumbing service has been completed. Please leave a review!',
-          timestamp: new Date(Date.now() - 86400000),
-          read: false,
-          bookingId: '2'
-        }
-      ]);
+      Alert.alert('Error', 'Failed to fetch notifications');
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
@@ -80,18 +48,11 @@ export default function CustomerNotifications() {
 
   const markAsRead = async (notificationId) => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      await axios.put(`${API_URL}/${notificationId}/read`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      setNotifications(prev => 
-        prev.map(notif => 
-          notif._id === notificationId ? { ...notif, read: true } : notif
-        )
-      );
+      const url = getApiUrlWithParams(API_CONFIG.ENDPOINTS.CUSTOMER_NOTIFICATION_READ, { notificationId });
+      await apiCall(url, { method: 'PUT' });
+      fetchNotifications();
     } catch (error) {
-      console.log('Error marking notification as read:', error);
+      Alert.alert('Error', 'Failed to mark notification as read');
     }
   };
 

@@ -24,7 +24,7 @@ const signup = async (req, res) => {
       return res.status(400).json({ message: 'Password must be at least 6 characters' });
     }
 
-    if (!['customer', 'provider'].includes(role)) {
+    if (!['customer', 'provider', 'admin'].includes(role)) {
       return res.status(400).json({ message: 'Invalid role' });
     }
 
@@ -44,13 +44,11 @@ const signup = async (req, res) => {
       return res.status(400).json({ message: 'Email already exists' });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-
     // Create user object based on role
     const userData = {
       name,
       email,
-      password: hashedPassword,
+      password, // Don't hash here - User model will handle it
       role,
     };
 
@@ -78,7 +76,7 @@ const signup = async (req, res) => {
     await user.save();
 
     res.status(201).json({ 
-      message: `${role === 'provider' ? 'Seller' : 'Customer'} account created successfully`,
+      message: `${role === 'provider' ? 'Seller' : role === 'admin' ? 'Admin' : 'Customer'} account created successfully`,
       user: {
         id: user._id,
         name: user.name,
@@ -106,7 +104,8 @@ const login = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const match = await bcrypt.compare(password, user.password);
+    // Use the model's comparePassword method
+    const match = await user.comparePassword(password);
     if (!match) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -223,4 +222,338 @@ const updateProfile = async (req, res) => {
   }
 };
 
-module.exports = { signup, login, getProfile, updateProfile };
+// Customer signup
+const customerSignup = async (req, res) => {
+  try {
+    const { name, email, password, address, phone, city } = req.body;
+
+    // Validation
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'Please fill in all required fields' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email already exists' });
+    }
+
+    const userData = {
+      name,
+      email,
+      password, // Don't hash here - User model will handle it
+      role: 'customer',
+      address,
+      phone,
+      city,
+    };
+
+    const user = new User(userData);
+    await user.save();
+
+    res.status(201).json({ 
+      success: true,
+      message: 'Customer account created successfully',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        address: user.address,
+        phone: user.phone,
+        city: user.city,
+      }
+    });
+  } catch (err) {
+    console.error('Customer signup error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Signup error', 
+      error: err.message 
+    });
+  }
+};
+
+// Customer signin
+const customerSignin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Please provide email and password' 
+      });
+    }
+
+    const user = await User.findOne({ email, role: 'customer' });
+    if (!user) {
+      return res.status(401).json({ 
+        success: false,
+        message: 'Invalid credentials or account not found' 
+      });
+    }
+
+    // Use the model's comparePassword method
+    const match = await user.comparePassword(password);
+    if (!match) {
+      return res.status(401).json({ 
+        success: false,
+        message: 'Invalid credentials' 
+      });
+    }
+
+    const jwtSecret = process.env.JWT_SECRET || 'homeease_jwt_secret_key_2024_secure_and_unique_fallback';
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      jwtSecret,
+      { expiresIn: '1d' }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        address: user.address,
+        phone: user.phone,
+        city: user.city,
+      },
+    });
+  } catch (err) {
+    console.error('Customer signin error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Login error', 
+      error: err.message 
+    });
+  }
+};
+
+// Provider signup
+const providerSignup = async (req, res) => {
+  try {
+    const { name, email, password, phone, address, city, bio } = req.body;
+
+    // Validation
+    if (!name || !email || !password || !phone || !city) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Please fill in all required fields' 
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Password must be at least 6 characters' 
+      });
+    }
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Email already exists' 
+      });
+    }
+
+    const userData = {
+      name,
+      email,
+      password, // Don't hash here - User model will handle it
+      role: 'provider',
+      phone,
+      address,
+      city,
+      bio,
+      approvalStatus: 'pending'
+    };
+
+    const user = new User(userData);
+    await user.save();
+
+    res.status(201).json({ 
+      success: true,
+      message: 'Provider account created successfully! Please wait for admin approval.',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phone: user.phone,
+        address: user.address,
+        city: user.city,
+        bio: user.bio,
+        approvalStatus: user.approvalStatus,
+      }
+    });
+  } catch (err) {
+    console.error('Provider signup error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Signup error', 
+      error: err.message 
+    });
+  }
+};
+
+// Provider signin
+const providerSignin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Please provide email and password' 
+      });
+    }
+
+    const user = await User.findOne({ email, role: 'provider' });
+    if (!user) {
+      return res.status(401).json({ 
+        success: false,
+        message: 'Invalid credentials or account not found' 
+      });
+    }
+
+    // Check if provider is approved
+    if (user.approvalStatus !== 'approved') {
+      return res.status(401).json({ 
+        success: false,
+        message: 'Your account is pending approval. Please contact admin.' 
+      });
+    }
+
+    // Use the model's comparePassword method
+    const match = await user.comparePassword(password);
+    if (!match) {
+      return res.status(401).json({ 
+        success: false,
+        message: 'Invalid credentials' 
+      });
+    }
+
+    const jwtSecret = process.env.JWT_SECRET || 'homeease_jwt_secret_key_2024_secure_and_unique_fallback';
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      jwtSecret,
+      { expiresIn: '1d' }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phone: user.phone,
+        address: user.address,
+        city: user.city,
+        bio: user.bio,
+        approvalStatus: user.approvalStatus,
+      },
+    });
+  } catch (err) {
+    console.error('Provider signin error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Login error', 
+      error: err.message 
+    });
+  }
+};
+
+// Admin signin
+const adminSignin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Please provide email and password' 
+      });
+    }
+
+    const user = await User.findOne({ email, role: 'admin' });
+    if (!user) {
+      return res.status(401).json({ 
+        success: false,
+        message: 'Invalid credentials or admin access denied' 
+      });
+    }
+
+    // Use the model's comparePassword method
+    const match = await user.comparePassword(password);
+    if (!match) {
+      return res.status(401).json({ 
+        success: false,
+        message: 'Invalid credentials' 
+      });
+    }
+
+    const jwtSecret = process.env.JWT_SECRET || 'homeease_jwt_secret_key_2024_secure_and_unique_fallback';
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      jwtSecret,
+      { expiresIn: '1d' }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Admin login successful',
+      token,
+      admin: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        permissions: user.permissions,
+      },
+    });
+  } catch (err) {
+    console.error('Admin signin error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Login error', 
+      error: err.message 
+    });
+  }
+};
+
+// Verify admin token
+const verifyAdminToken = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not an admin' });
+    }
+    res.json({ success: true, message: 'Token is valid', user: req.user });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Token verification failed' });
+  }
+};
+
+module.exports = {
+  signup,
+  login,
+  getProfile,
+  updateProfile,
+  customerSignup,
+  customerSignin,
+  providerSignup,
+  providerSignin,
+  adminSignin,
+  verifyAdminToken
+};

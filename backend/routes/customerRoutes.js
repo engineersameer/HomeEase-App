@@ -1,53 +1,42 @@
 const express = require('express');
 const router = express.Router();
+const customerController = require('../controllers/customerController');
 const auth = require('../middleware/auth');
-const {
-  getCustomerDashboard,
-  getCustomerProfile,
-  updateCustomerProfile,
-  searchServices,
-  bookService,
-  getCustomerBookings,
-  getBookingById,
-  updateBookingStatus,
-  submitReview,
-  getCustomerReviews,
-  getServiceHistory,
-  makePayment,
-  getCustomerStats,
-  getCustomerNotifications
-} = require('../controllers/customerController');
 
-// Dashboard
-router.get('/dashboard', auth, getCustomerDashboard);
+// Apply auth middleware to all routes
+router.use(auth);
 
-// Profile management
-router.get('/profile', auth, getCustomerProfile);
-router.put('/profile', auth, updateCustomerProfile);
-
-// Service search
-router.get('/search', auth, searchServices);
+// Service search and discovery
+router.get('/services/search', customerController.searchServices);
+router.get('/services/categories', customerController.getCategories);
+router.get('/services/:serviceId', customerController.getServiceDetails);
 
 // Booking management
-router.post('/book', auth, bookService);
-router.get('/bookings', auth, getCustomerBookings);
-router.get('/bookings/:bookingId', auth, getBookingById);
-router.put('/bookings/:bookingId/status', auth, updateBookingStatus);
+router.post('/bookings', customerController.createBooking);
+router.get('/bookings', customerController.getBookings);
+router.get('/bookings/:bookingId', customerController.getBookingDetails);
+router.put('/bookings/:bookingId/cancel', customerController.cancelBooking);
 
-// Reviews and ratings
-router.post('/reviews', auth, submitReview);
-router.get('/reviews', auth, getCustomerReviews);
+// Chat functionality
+router.get('/chats', customerController.getChats);
+router.get('/chats/:chatId/messages', customerController.getChatMessages);
+router.post('/chats/:chatId/messages', customerController.sendMessage);
 
-// Service history
-router.get('/history', auth, getServiceHistory);
-
-// Payment
-router.post('/payment', auth, makePayment);
+// Reviews
+router.post('/reviews', customerController.createReview);
 
 // Stats
-router.get('/stats', auth, getCustomerStats);
+router.get('/stats', customerController.getStats);
 
 // Notifications
-router.get('/notifications', auth, getCustomerNotifications);
+router.get('/notifications', customerController.getNotifications);
+router.put('/notifications/:notificationId/read', customerController.readNotification);
+
+// Profile
+router.get('/profile', customerController.getCustomerProfile);
+router.put('/profile', customerController.updateCustomerProfile);
+
+// Support
+router.post('/support', customerController.submitSupportRequest);
 
 module.exports = router;

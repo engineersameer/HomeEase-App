@@ -12,13 +12,11 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getApiUrl, apiCall, API_CONFIG } from '../../config/api';
 import FloatingInput from '../provider/shared/FloatingInput';
 import Button from '../provider/shared/Button';
-
-const API_URL = 'http://192.168.100.5:5000/api/auth/login';
 
 export default function ProviderSignin() {
   const router = useRouter();
@@ -36,24 +34,31 @@ export default function ProviderSignin() {
 
     setLoading(true);
     try {
-      const response = await axios.post(API_URL, { email, password });
+      const response = await apiCall(getApiUrl(API_CONFIG.ENDPOINTS.PROVIDER_SIGNIN), {
+        method: 'POST',
+        body: JSON.stringify({ email, password })
+      });
 
-      if (response.status === 200) {
-        const { token, role, user } = response.data;
+      if (response.success) {
+        const { token, user } = response;
         
-        if (role === 'provider') {
-          await AsyncStorage.setItem('token', token);
-          await AsyncStorage.setItem('user', JSON.stringify(user));
-          await AsyncStorage.setItem('userRole', role);
-          
-          Alert.alert('Success', 'Welcome back!');
-          router.replace('/provider/welcome');
-        } else {
-          Alert.alert('Error', 'This account is not registered as a service provider');
-        }
+        // Store authentication data
+        await AsyncStorage.setItem('token', token);
+        await AsyncStorage.setItem('user', JSON.stringify(user));
+        await AsyncStorage.setItem('userRole', 'provider');
+        
+        Alert.alert('Success', 'Welcome back!', [
+          {
+            text: 'OK',
+            onPress: () => router.replace('/provider/welcome')
+          }
+        ]);
+      } else {
+        Alert.alert('Error', response.message || 'Signin failed');
       }
-    } catch (err) {
-      Alert.alert('Error', err.response?.data?.message || 'Signin failed');
+    } catch (error) {
+      console.error('Signin error:', error);
+      Alert.alert('Error', 'Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -92,7 +97,7 @@ export default function ProviderSignin() {
             marginBottom: 10,
             letterSpacing: -0.5,
           }}>
-            Welcome Back, Seller
+            Welcome Back, Provider
           </Text>
           <Text style={{ 
             fontSize: 15,
@@ -132,19 +137,19 @@ export default function ProviderSignin() {
         {/* Minimal Buttons and Link */}
         <View style={{ marginHorizontal: 32, alignItems: 'center' }}>
           <Button
-            title={loading ? 'Signing In...' : 'Sign In as Seller'}
+            title={loading ? 'Signing In...' : 'Sign In as Provider'}
             onPress={handleSignin}
             loading={loading}
             variant="primary"
             style={{ marginBottom: 10, width: '100%' }}
           />
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-            <Text style={{ fontSize: 14, color: theme.textLight, fontFamily: Fonts.body }}>Don't have a seller account? </Text>
+            <Text style={{ fontSize: 14, color: theme.textLight, fontFamily: Fonts.body }}>Don't have a provider account? </Text>
             <Text
               style={{ fontSize: 14, color: theme.accent, fontFamily: Fonts.body, textDecorationLine: 'underline' }}
               onPress={() => router.push('/seller-signup')}
             >
-              Create Seller Account
+              Create Provider Account
             </Text>
           </View>
         </View>

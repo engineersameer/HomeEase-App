@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, SafeAreaView, ScrollView, Image, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, SafeAreaView, ScrollView, Image, ActivityIndicator, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../../context/ThemeContext';
 import { Fonts } from '../../Color/Color';
 import ProviderFooter from './shared/Footer';
-import axios from 'axios';
+import { getApiUrl, getApiUrlWithParams, apiCall, API_CONFIG } from '../../config/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ProviderComplaint() {
@@ -32,18 +32,10 @@ export default function ProviderComplaint() {
       const userData = await AsyncStorage.getItem('user');
       const user = userData ? JSON.parse(userData) : null;
       if (!user || !user._id) throw new Error('User not found');
-      // Replace with your backend API URL
-      const API_URL = 'http://192.168.100.5:5000/api/bookings/provider/' + user._id;
-      const response = await axios.get(API_URL, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (response.data && response.data.length > 0) {
-        setBookingOptions(response.data.map(b => ({ id: b.bookingId, label: b.bookingId })));
-      } else {
-        setBookingOptions([]);
-        setNoBookings(true);
-      }
-    } catch (err) {
+      const url = getApiUrlWithParams(API_CONFIG.ENDPOINTS.PROVIDER_BOOKINGS, { providerId: user._id });
+      const data = await apiCall(url);
+      setBookingOptions(data.bookings?.map(b => ({ id: b.bookingId, label: b.bookingId })) || []);
+    } catch (error) {
       setBookingOptions([]);
       setNoBookings(true);
     }

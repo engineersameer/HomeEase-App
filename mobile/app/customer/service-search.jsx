@@ -1,209 +1,420 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   ScrollView,
-  Image,
+  TouchableOpacity,
+  TextInput,
+  Alert,
   SafeAreaView,
+  StatusBar,
+  ActivityIndicator,
+  Image,
+  RefreshControl
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Colors, Fonts } from '../../Color/Color';
-import FloatingInput from '../customer/shared/FloatingInput';
 import { useTheme } from '../../context/ThemeContext';
+import { Fonts } from '../../Color/Color';
+import { getApiUrl, getApiUrlWithParams, apiCall, API_CONFIG } from '../../config/api';
+import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
+import ServiceDetail from './shared/service-detail';
+import Footer from './shared/Footer';
 
 export default function ServiceSearch() {
+  const { theme, isDarkMode, toggleTheme } = useTheme();
   const router = useRouter();
-  const { theme } = useTheme();
-
-  // Search state
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [user, setUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [selectedLocation, setSelectedLocation] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [showFilters, setShowFilters] = useState(false);
 
-  const categories = [
-    'All', 'Plumbing', 'Electrical', 'Cleaning', 'Carpentry', 
-    'Painting', 'AC Services', 'Appliance Repair', 'Handyman'
+  const cities = [
+    'Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 'Faisalabad',
+    'Multan', 'Peshawar', 'Quetta', 'Sialkot', 'Gujranwala'
   ];
 
-  const locations = [
-    'All', 'Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 
-    'Faisalabad', 'Multan', 'Peshawar', 'Quetta'
-  ];
+  useEffect(() => {
+    loadUserData();
+    fetchCategories();
+    searchServices();
+  }, []);
 
-  // Mock services for demo
-  const services = [
-    {
-      id: 1,
-      name: 'Ahmed Electrician',
-      category: 'Electrical',
-      location: 'Karachi',
-      rating: 4.8,
-      price: 800,
-      image: 'https://via.placeholder.com/100',
-      description: 'Professional electrician with 5 years experience'
-    },
-    {
-      id: 2,
-      name: 'Ali Plumber',
-      category: 'Plumbing',
-      location: 'Lahore',
-      rating: 4.6,
-      price: 600,
-      image: 'https://via.placeholder.com/100',
-      description: 'Expert plumber specializing in residential services'
-    },
-    {
-      id: 3,
-      name: 'Hassan Cleaner',
-      category: 'Cleaning',
-      location: 'Islamabad',
-      rating: 4.9,
-      price: 400,
-      image: 'https://via.placeholder.com/100',
-      description: 'Professional cleaning services for homes and offices'
+  const loadUserData = async () => {
+    try {
+      const userData = await AsyncStorage.getItem('user');
+      if (userData) {
+        setUser(JSON.parse(userData));
+      }
+    } catch (error) {
+      console.log('Error loading user data:', error);
     }
-  ];
+  };
 
-  // Filtered services
-  const filteredServices = services.filter(service => {
-    return (
-      (selectedCategory === 'All' || service.category === selectedCategory) &&
-      (selectedLocation === 'All' || service.location === selectedLocation) &&
-      (searchQuery === '' ||
-        service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        service.description.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
-  });
+  const searchServices = async () => {
+    setLoading(true);
+    try {
+      const params = {};
+      if (searchQuery.trim()) params.query = searchQuery;
+      if (selectedCategory) params.category = selectedCategory;
+      if (selectedLocation) params.location = selectedLocation;
+
+      const url = getApiUrlWithParams(API_CONFIG.ENDPOINTS.CUSTOMER_SERVICE_SEARCH, params);
+      const data = await apiCall(url);
+      setSearchResults(data.services || []);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to search services');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const data = await apiCall(getApiUrl(API_CONFIG.ENDPOINTS.CUSTOMER_CATEGORIES));
+      setCategories(data.categories || []);
+    } catch (error) {
+      console.log('Error fetching categories:', error);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([
+      searchServices(),
+      fetchCategories()
+    ]);
+    setRefreshing(false);
+  };
+
+  const handleBookService = (service) => {
+    router.push({
+      pathname: '/customer/service-booking',
+      params: { serviceId: service._id }
+    });
+  };
+
+  const handleChatWithProvider = (service) => {
+    // Create or get existing chat
+    router.push({
+      pathname: '/customer/customer-chat',
+      params: { 
+        chatId: `chat_${user._id}_${service.provider._id}`,
+        providerId: service.provider._id,
+        serviceId: service._id
+      }
+    });
+  };
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('');
+    setSelectedLocation('');
+    searchServices();
+  };
+
+  const formatCurrency = (amount) => {
+    return `PKR ${amount.toLocaleString()}`;
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-      {/* Consistent Header */}
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.background} />
+      
+      {/* Header */}
       <View style={{
         backgroundColor: theme.card,
-        paddingTop: 51,
-        
-        paddingBottom: 24,
+        paddingTop: 45,
+        paddingBottom: 15,
         paddingHorizontal: 24,
         borderBottomWidth: 1,
         borderBottomColor: theme.border,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-start',
       }}>
-        <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 12 }}>
-          <Text style={{ fontSize: 22, color: theme.textDark }}>{'←'}</Text>
-        </TouchableOpacity>
-        <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.textDark, fontFamily: Fonts.heading }}>
-          Search Services
-        </Text>
-      </View>
-      <ScrollView style={{ flex: 1 }}>
-        <View style={{ padding: 24 }}>
-          {/* Aesthetic Floating Search Input */}
-          <FloatingInput
-            label="Search by service or provider..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            style={{ marginBottom: 24 }}
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+          <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 12 }}>
+            <Ionicons name="arrow-back" size={24} color={theme.textDark} />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.textDark, fontFamily: Fonts.heading }}>
+            Find Services
+          </Text>
+        </View>
+
+        {/* Search Bar */}
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: theme.background,
+            borderRadius: 12,
+            paddingHorizontal: 12,
+            marginRight: 8
+          }}>
+            <Ionicons name="search" size={20} color={theme.textLight} />
+            <TextInput
+              style={{
+                flex: 1,
+                paddingVertical: 12,
+                paddingHorizontal: 8,
+                color: theme.textDark,
+                fontFamily: Fonts.body,
+                fontSize: 14
+              }}
+              placeholder="Search for services..."
+              placeholderTextColor={theme.textLight}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onSubmitEditing={searchServices}
+            />
+          </View>
+          <TouchableOpacity
+            style={{
+              backgroundColor: theme.primary,
+              padding: 12,
+              borderRadius: 12
+            }}
+            onPress={searchServices}
+          >
+            <Ionicons name="search" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Filter Toggle */}
+        <TouchableOpacity
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginTop: 12,
+            paddingVertical: 8
+          }}
+          onPress={() => setShowFilters(!showFilters)}
+        >
+          <Ionicons name="filter" size={16} color={theme.textDark} />
+          <Text style={{ marginLeft: 6, color: theme.textDark, fontFamily: Fonts.body }}>
+            Filters
+          </Text>
+          <Ionicons 
+            name={showFilters ? "chevron-up" : "chevron-down"} 
+            size={16} 
+            color={theme.textDark} 
+            style={{ marginLeft: 4 }}
           />
-          {/* Aesthetic Filters Section */}
-          <View style={{ marginBottom: 24 }}>
-            <Text style={{ fontSize: 14, color: theme.textLight, fontFamily: Fonts.body, marginBottom: 8 }}>Category</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-              {categories.map(cat => (
-                <TouchableOpacity
-                  key={cat}
-                  onPress={() => setSelectedCategory(cat)}
-                  style={{
-                    paddingVertical: 8,
-                    paddingHorizontal: 18,
-                    borderRadius: 20,
-                    backgroundColor: selectedCategory === cat ? theme.primary : theme.card,
-                    borderWidth: 1,
-                    borderColor: selectedCategory === cat ? theme.primary : theme.border,
-                    marginRight: 10,
-                  }}
-                >
-                  <Text style={{ color: selectedCategory === cat ? '#fff' : theme.textDark, fontSize: 14, fontFamily: Fonts.body }}>
-                    {cat}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            <Text style={{ fontSize: 14, color: theme.textLight, fontFamily: Fonts.body, marginBottom: 8 }}>Location</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Filters */}
+      {showFilters && (
+        <View style={{
+          backgroundColor: theme.card,
+          paddingHorizontal: 24,
+          paddingVertical: 16,
+          borderBottomWidth: 1,
+          borderBottomColor: theme.border
+        }}>
+          {/* Categories */}
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: theme.textDark, fontFamily: Fonts.subheading, marginBottom: 8 }}>
+              Category
+            </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {locations.map(loc => (
+              <TouchableOpacity
+                style={{
+                  backgroundColor: !selectedCategory ? theme.primary : theme.card,
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  borderRadius: 20,
+                  marginRight: 8,
+                  borderWidth: 1,
+                  borderColor: theme.border
+                }}
+                onPress={() => setSelectedCategory('')}
+              >
+                <Text style={{
+                  color: !selectedCategory ? '#fff' : theme.textDark,
+                  fontFamily: Fonts.body,
+                  fontSize: 12
+                }}>
+                  All
+                </Text>
+              </TouchableOpacity>
+              {categories.map((category) => (
                 <TouchableOpacity
-                  key={loc}
-                  onPress={() => setSelectedLocation(loc)}
+                  key={category}
                   style={{
+                    backgroundColor: selectedCategory === category ? theme.primary : theme.card,
+                    paddingHorizontal: 16,
                     paddingVertical: 8,
-                    paddingHorizontal: 18,
                     borderRadius: 20,
-                    backgroundColor: selectedLocation === loc ? theme.primary : theme.card,
+                    marginRight: 8,
                     borderWidth: 1,
-                    borderColor: selectedLocation === loc ? theme.primary : theme.border,
-                    marginRight: 10,
+                    borderColor: theme.border
                   }}
+                  onPress={() => setSelectedCategory(category)}
                 >
-                  <Text style={{ color: selectedLocation === loc ? '#fff' : theme.textDark, fontSize: 14, fontFamily: Fonts.body }}>
-                    {loc}
+                  <Text style={{
+                    color: selectedCategory === category ? '#fff' : theme.textDark,
+                    fontFamily: Fonts.body,
+                    fontSize: 12
+                  }}>
+                    {category}
                   </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
           </View>
-          {/* Minimalist Service List */}
-          <View style={{ marginTop: 8 }}>
-            {filteredServices.length === 0 ? (
-              <Text style={{ color: theme.textLight, fontFamily: Fonts.body, textAlign: 'center', marginTop: 40 }}>
-                No services found.
-              </Text>
-            ) : (
-              filteredServices.map(service => (
+
+          {/* Location */}
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: theme.textDark, fontFamily: Fonts.subheading, marginBottom: 8 }}>
+              Location
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <TouchableOpacity
+                style={{
+                  backgroundColor: !selectedLocation ? theme.primary : theme.card,
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  borderRadius: 20,
+                  marginRight: 8,
+                  borderWidth: 1,
+                  borderColor: theme.border
+                }}
+                onPress={() => setSelectedLocation('')}
+              >
+                <Text style={{
+                  color: !selectedLocation ? '#fff' : theme.textDark,
+                  fontFamily: Fonts.body,
+                  fontSize: 12
+                }}>
+                  All Locations
+                </Text>
+              </TouchableOpacity>
+              {cities.map((city) => (
                 <TouchableOpacity
-                  key={service.id}
-                  onPress={() => router.push({ pathname: '/service-detail', params: { serviceId: service.id } })}
+                  key={city}
                   style={{
-                    borderBottomWidth: 1,
-                    borderColor: theme.border,
-                    paddingVertical: 18,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    backgroundColor: 'transparent',
+                    backgroundColor: selectedLocation === city ? theme.primary : theme.card,
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: 20,
+                    marginRight: 8,
+                    borderWidth: 1,
+                    borderColor: theme.border
                   }}
+                  onPress={() => setSelectedLocation(city)}
                 >
-                  <Image
-                    source={{ uri: service.image }}
-                    style={{ width: 54, height: 54, borderRadius: 27, marginRight: 16, backgroundColor: theme.card }}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 16, fontWeight: '600', color: theme.textDark, fontFamily: Fonts.subheading }}>
-                      {service.name}
-                    </Text>
-                    <Text style={{ fontSize: 13, color: theme.textLight, fontFamily: Fonts.body, marginBottom: 2 }}>
-                      {service.category} • {service.location}
-                    </Text>
-                    <Text style={{ fontSize: 13, color: theme.textLight, fontFamily: Fonts.body }}>
-                      {service.description}
-                    </Text>
-                  </View>
-                  <View style={{ alignItems: 'flex-end', minWidth: 60 }}>
-                    <Text style={{ fontSize: 15, color: theme.primary, fontWeight: 'bold', fontFamily: Fonts.body }}>
-                      PKR {service.price}
-                    </Text>
-                    <Text style={{ fontSize: 13, color: theme.textLight, fontFamily: Fonts.body }}>
-                      ⭐ {service.rating}
-                    </Text>
-                  </View>
+                  <Text style={{
+                    color: selectedLocation === city ? '#fff' : theme.textDark,
+                    fontFamily: Fonts.body,
+                    fontSize: 12
+                  }}>
+                    {city}
+                  </Text>
                 </TouchableOpacity>
-              ))
-            )}
-            <View style={{ height: 40 }} />
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* Filter Actions */}
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <TouchableOpacity
+              style={{
+                flex: 1,
+                backgroundColor: theme.primary,
+                paddingVertical: 10,
+                borderRadius: 8,
+                alignItems: 'center'
+              }}
+              onPress={searchServices}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontFamily: Fonts.body }}>
+                Apply Filters
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                flex: 1,
+                backgroundColor: theme.card,
+                paddingVertical: 10,
+                borderRadius: 8,
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: theme.border
+              }}
+              onPress={clearFilters}
+            >
+              <Text style={{ color: theme.textDark, fontWeight: 'bold', fontFamily: Fonts.body }}>
+                Clear
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
+      )}
+
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {/* Search Results */}
+        {loading ? (
+          <View style={{ alignItems: 'center', marginTop: 40 }}>
+            <ActivityIndicator size="large" color={theme.primary} />
+            <Text style={{ marginTop: 16, color: theme.textDark, fontFamily: Fonts.body }}>
+              Searching for services...
+            </Text>
+          </View>
+        ) : searchResults.length === 0 ? (
+          <View style={{ alignItems: 'center', marginTop: 40 }}>
+            <Ionicons name="search-outline" size={48} color={theme.textLight} />
+            <Text style={{ color: theme.textLight, fontFamily: Fonts.body, marginTop: 12, textAlign: 'center' }}>
+              {searchQuery || selectedCategory || selectedLocation 
+                ? 'No services found matching your criteria.'
+                : 'Search for services to get started.'
+              }
+            </Text>
+            {searchQuery || selectedCategory || selectedLocation ? (
+              <TouchableOpacity
+                style={{
+                  backgroundColor: theme.primary,
+                  paddingHorizontal: 20,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  marginTop: 16
+                }}
+                onPress={clearFilters}
+              >
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontFamily: Fonts.body }}>
+                  Clear Filters
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        ) : (
+          <>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: theme.textDark, fontFamily: Fonts.subheading, marginBottom: 16 }}>
+              {searchResults.length} service{searchResults.length !== 1 ? 's' : ''} found
+            </Text>
+            {searchResults.map((service) => (
+              <ServiceDetail
+                key={service._id}
+                service={service}
+                onBook={handleBookService}
+                onChat={handleChatWithProvider}
+              />
+            ))}
+          </>
+        )}
       </ScrollView>
+
+      <Footer theme={theme} router={router} current="search" />
     </SafeAreaView>
   );
 } 

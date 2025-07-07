@@ -12,13 +12,11 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getApiUrl, apiCall, API_CONFIG } from '../../config/api';
 import Button from '../customer/shared/Button';
 import FloatingInput from '../customer/shared/FloatingInput';
-
-const API_URL = 'http://192.168.100.5:5000/api/auth/login';
 
 export default function CustomerSignin() {
   const router = useRouter();
@@ -34,26 +32,42 @@ export default function CustomerSignin() {
       return;
     }
 
+    // Debug: Check if API_CONFIG is available
+    console.log('API_CONFIG:', API_CONFIG);
+    console.log('API_CONFIG.ENDPOINTS:', API_CONFIG?.ENDPOINTS);
+
+    if (!API_CONFIG || !API_CONFIG.ENDPOINTS) {
+      Alert.alert('Error', 'API configuration not loaded');
+      return;
+    }
+
     setLoading(true);
     try {
-      
-      const response = await axios.post(API_URL, { email, password });
-      if (response.status === 200) {
-        const { token, role, user } = response.data;
+      const response = await apiCall(getApiUrl(API_CONFIG.ENDPOINTS.CUSTOMER_SIGNIN), {
+        method: 'POST',
+        body: JSON.stringify({ email, password })
+      });
+
+      if (response.success) {
+        const { token, user } = response;
         
-        if (role === 'customer') {
-          await AsyncStorage.setItem('token', token);
-          await AsyncStorage.setItem('user', JSON.stringify(user));
-          await AsyncStorage.setItem('userRole', role);
-          
-          Alert.alert('Success', 'Welcome back!');
-          router.replace('/customer/customer-home');
-        } else {
-          Alert.alert('Error', 'This account is not registered as a customer');
-        }
+        // Store authentication data
+        await AsyncStorage.setItem('token', token);
+        await AsyncStorage.setItem('user', JSON.stringify(user));
+        await AsyncStorage.setItem('userRole', 'customer');
+        
+        Alert.alert('Success', 'Welcome back!', [
+          {
+            text: 'OK',
+            onPress: () => router.replace('/customer/customer-home')
+          }
+        ]);
+      } else {
+        Alert.alert('Error', response.message || 'Signin failed');
       }
-    } catch (err) {
-      Alert.alert('Error', err.response?.data?.message || 'Signin failed');
+    } catch (error) {
+      console.error('Signin error:', error);
+      Alert.alert('Error', 'Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
     }
