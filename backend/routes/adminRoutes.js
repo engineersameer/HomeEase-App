@@ -387,28 +387,33 @@ router.get('/ratings', auth, adminAuth, async (req, res) => {
 // ==================== SERVICE CATEGORIES ====================
 
 // Get service categories
-router.get('/service-categories', auth, adminAuth, async (req, res) => {
-  try {
-    const categories = [
-      { id: 'electrical', name: 'Electrical', icon: '⚡' },
-      { id: 'plumbing', name: 'Plumbing', icon: '🔧' },
-      { id: 'carpentry', name: 'Carpentry', icon: '🔨' },
-      { id: 'painting', name: 'Painting', icon: '🎨' },
-      { id: 'cleaning', name: 'Cleaning', icon: '🧹' },
-      { id: 'ac_repair', name: 'AC Repair', icon: '❄️' },
-      { id: 'appliance_repair', name: 'Appliance Repair', icon: '🔌' },
-      { id: 'gardening', name: 'Gardening', icon: '🌱' },
-      { id: 'security', name: 'Security', icon: '🔒' },
-      { id: 'cooking', name: 'Cooking', icon: '👨‍🍳' },
-      { id: 'driving', name: 'Driving', icon: '🚗' },
-      { id: 'other', name: 'Other', icon: '📋' }
-    ];
-    
-    res.json(categories);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+// router.get('/service-categories', auth, adminAuth, async (req, res) => {
+//   try {
+//     const categories = [
+//       { id: 'electrical', name: 'Electrical', icon: '⚡' },
+//       { id: 'plumbing', name: 'Plumbing', icon: '🔧' },
+//       { id: 'carpentry', name: 'Carpentry', icon: '🔨' },
+//       { id: 'painting', name: 'Painting', icon: '🎨' },
+//       { id: 'cleaning', name: 'Cleaning', icon: '🧹' },
+//       { id: 'ac_repair', name: 'AC Repair', icon: '❄️' },
+//       { id: 'appliance_repair', name: 'Appliance Repair', icon: '🔌' },
+//       { id: 'gardening', name: 'Gardening', icon: '🌱' },
+//       { id: 'security', name: 'Security', icon: '🔒' },
+//       { id: 'cooking', name: 'Cooking', icon: '👨‍🍳' },
+//       { id: 'driving', name: 'Driving', icon: '🚗' },
+//       { id: 'other', name: 'Other', icon: '📋' }
+//     ];
+//     res.json(categories);
+//   } catch (error) {
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
+// Service Category CRUD
+router.post('/service-categories', adminController.createServiceCategory);
+router.get('/service-categories', adminController.getServiceCategories);
+router.put('/service-categories/:id', adminController.updateServiceCategory);
+router.delete('/service-categories/:id', adminController.deleteServiceCategory);
 
 // ==================== REPORTS ====================
 

@@ -4,6 +4,7 @@ const Chat = require('../models/Chat');
 const User = require('../models/User');
 const Review = require('../models/Review');
 const Complaint = require('../models/Complaint');
+const ServiceCategory = require('../models/ServiceCategory');
 
 // Get provider dashboard stats
 exports.getDashboard = async (req, res) => {
@@ -70,6 +71,13 @@ exports.createService = async (req, res) => {
     });
 
     await service.save();
+
+    // Update ServiceCategory with provider ID if not already set
+    await ServiceCategory.findOneAndUpdate(
+      { serviceCategory: category, provider: { $exists: false } },
+      { provider: req.user.id },
+      { new: true }
+    );
 
     res.status(201).json({
       success: true,
@@ -461,5 +469,15 @@ exports.createComplaint = async (req, res) => {
   } catch (err) {
     console.error('Create complaint error:', err);
     res.status(500).json({ success: false, message: 'Failed to submit complaint' });
+  }
+};
+
+// Fetch all service categories for providers
+exports.getServiceCategories = async (req, res) => {
+  try {
+    const categories = await ServiceCategory.find().sort({ createdAt: -1 });
+    res.status(200).json({ success: true, data: categories });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch service categories.', error: error.message });
   }
 };

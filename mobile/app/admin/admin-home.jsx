@@ -394,6 +394,7 @@ export default function AdminHome() {
               { icon: '📝', title: 'Manage Content', action: () => router.push('/admin/admin-content'), color: '#F59E0B' },
               { icon: '🔧', title: 'System Maintenance', action: () => router.push('/admin/admin-maintenance'), color: '#10B981' },
               { icon: '📈', title: 'Analytics', action: () => router.push('/admin/admin-reports'), color: '#06B6D4' },
+              { icon: '➕', title: 'Add Service Category', action: () => router.push('/admin/admin-add-service'), color: '#6366F1' },
             ].map((item, index) => (
               <TouchableOpacity
                 key={index}

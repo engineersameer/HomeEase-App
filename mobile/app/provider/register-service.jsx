@@ -43,19 +43,10 @@ export default function RegisterService() {
     images: []
   });
 
-  const categories = [
-    'Electrical',
-    'Plumbing',
-    'Cleaning',
-    'Carpentry',
-    'Painting',
-    'Gardening',
-    'Moving',
-    'Repair',
-    'Installation',
-    'Maintenance',
-    'Other'
-  ];
+  const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [categoriesError, setCategoriesError] = useState('');
+  const [providerServices, setProviderServices] = useState([]);
 
   const cities = [
     'Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 'Faisalabad',
@@ -64,6 +55,8 @@ export default function RegisterService() {
 
   useEffect(() => {
     loadUserData();
+    fetchCategories();
+    fetchProviderServices();
   }, []);
 
   const loadUserData = async () => {
@@ -83,7 +76,59 @@ export default function RegisterService() {
     }
   };
 
+  const fetchCategories = async () => {
+    setCategoriesLoading(true);
+    setCategoriesError('');
+    try {
+      const res = await apiCall(getApiUrl('/api/provider/service-categories'), { method: 'GET' });
+      if (res.success) {
+        setCategories(res.data.map(cat => cat.serviceCategory));
+      } else {
+        setCategoriesError(res.message || 'Failed to load categories');
+      }
+    } catch (err) {
+      setCategoriesError('Failed to load categories');
+    } finally {
+      setCategoriesLoading(false);
+    }
+  };
+
+  const fetchProviderServices = async () => {
+    try {
+      const res = await apiCall(getApiUrl('/api/provider/services'), { method: 'GET' });
+      if (res.success) {
+        setProviderServices(res.services);
+      } else {
+        setProviderServices([]);
+      }
+    } catch (err) {
+      setProviderServices([]);
+    }
+  };
+
   const createService = async () => {
+    if (providerServices.length >= 2) {
+      Alert.alert('Limit Reached', "You have already registered for 2 services, can't do more.");
+      setServiceData({
+        title: '',
+        category: '',
+        description: '',
+        price: '',
+        location: '',
+        availability: {
+          monday: { available: true, startTime: '09:00', endTime: '17:00' },
+          tuesday: { available: true, startTime: '09:00', endTime: '17:00' },
+          wednesday: { available: true, startTime: '09:00', endTime: '17:00' },
+          thursday: { available: true, startTime: '09:00', endTime: '17:00' },
+          friday: { available: true, startTime: '09:00', endTime: '17:00' },
+          saturday: { available: true, startTime: '09:00', endTime: '17:00' },
+          sunday: { available: false, startTime: '09:00', endTime: '17:00' }
+        },
+        tags: [],
+        images: []
+      });
+      return;
+    }
     if (!serviceData.title.trim() || !serviceData.category || !serviceData.description.trim() || !serviceData.price || !serviceData.location) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
@@ -110,9 +155,11 @@ export default function RegisterService() {
       Alert.alert('Success', 'Service created successfully!', [
         {
           text: 'OK',
-          onPress: () => router.push('/provider/provider-orders')
+          onPress: () => router.push('/provider/your-services')
         }
       ]);
+      // Refresh provider services after creation
+      fetchProviderServices();
     } catch (error) {
       Alert.alert('Error', 'Failed to create service. Please try again.');
     } finally {
@@ -202,31 +249,39 @@ export default function RegisterService() {
             <Text style={{ fontSize: 14, fontWeight: '600', color: theme.textDark, fontFamily: Fonts.subheading, marginBottom: 8 }}>
               Category *
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
-              {categories.map((category) => (
-                <TouchableOpacity
-                  key={category}
-                  style={{
-                    backgroundColor: serviceData.category === category ? theme.primary : theme.card,
-                    paddingHorizontal: 16,
-                    paddingVertical: 8,
-                    borderRadius: 20,
-                    marginRight: 8,
-                    borderWidth: 1,
-                    borderColor: theme.border
-                  }}
-                  onPress={() => updateServiceData('category', category)}
-                >
-                  <Text style={{
-                    color: serviceData.category === category ? '#fff' : theme.textDark,
-                    fontFamily: Fonts.body,
-                    fontSize: 12
-                  }}>
-                    {category}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            {categoriesLoading ? (
+              <ActivityIndicator size="small" color={theme.primary} style={{ marginVertical: 8 }} />
+            ) : categoriesError ? (
+              <Text style={{ color: '#EF4444', marginVertical: 8 }}>{categoriesError}</Text>
+            ) : categories.length === 0 ? (
+              <Text style={{ color: theme.textLight, marginVertical: 8 }}>No service categories found.</Text>
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+                {categories.map((category) => (
+                  <TouchableOpacity
+                    key={category}
+                    style={{
+                      backgroundColor: serviceData.category === category ? theme.primary : theme.card,
+                      paddingHorizontal: 16,
+                      paddingVertical: 8,
+                      borderRadius: 20,
+                      marginRight: 8,
+                      borderWidth: 1,
+                      borderColor: theme.border
+                    }}
+                    onPress={() => updateServiceData('category', category)}
+                  >
+                    <Text style={{
+                      color: serviceData.category === category ? '#fff' : theme.textDark,
+                      fontFamily: Fonts.body,
+                      fontSize: 12
+                    }}>
+                      {category}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
           </View>
 
           {/* Description */}

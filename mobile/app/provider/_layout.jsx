@@ -5,6 +5,7 @@ import { useTheme } from '../../context/ThemeContext';
 import ProviderFooter from './shared/Footer';
 import ProviderEarnings from './earnings';
 import ProviderReviews from './reviews';
+import YourServices from './your-services';
 
 export default function ProviderLayout() {
   const { theme } = useTheme();
@@ -18,6 +19,8 @@ export default function ProviderLayout() {
       ? 'orders'
       : segments[segments.length - 1] === 'provider-profile'
       ? 'profile'
+      : segments[segments.length - 1] === 'your-services'
+      ? 'your-services'
       : segments[segments.length - 1] === 'terms'
       ? ''
       : '';

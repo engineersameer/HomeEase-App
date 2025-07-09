@@ -5,10 +5,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../../Color/Color';
 import { ActivityIndicator } from 'react-native';
 import AdminFooter from './shared/Footer';
+import AdminAddService from './admin-add-service';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function AdminLayout() {
   const router = useRouter();
   const segments = useSegments();
+  const { theme } = useTheme();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -76,14 +79,15 @@ export default function AdminLayout() {
   else if (lastSegment === 'admin-reports') current = 'reports';
   else if (lastSegment === 'admin-profile') current = 'profile';
   else if (lastSegment === 'admin-home') current = 'home';
+  else if (lastSegment === 'admin-add-service') current = 'add-service';
 
   // Only show footer on main admin tabs
-  const showFooter = ['home', 'users', 'reports', 'profile'].includes(current);
+  const showFooter = ['home', 'users', 'reports', 'profile', 'add-service'].includes(current);
 
   return (
     <View style={{ flex: 1 }}>
       <Slot />
-      {showFooter && <AdminFooter theme={Colors.light} router={router} current={current} />}
+      {showFooter && <AdminFooter theme={theme} router={router} current={current} />}
     </View>
   );
 }

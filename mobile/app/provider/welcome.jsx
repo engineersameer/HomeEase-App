@@ -229,6 +229,7 @@ export default function ProviderWelcome() {
               { icon: '📝', title: 'Complaint to Admin', onPress: () => router.push('/provider/complaint') },
               { icon: '📄', title: 'Terms and Conditions', onPress: () => router.push('/provider/terms') },
               { icon: '❄️', title: 'Freeze Account', onPress: () => router.push('/provider/freeze-account') },
+              { icon: '🛠️', title: 'Your Services', onPress: () => router.push('/provider/your-services') },
             ].map((item, index) => (
               <TouchableOpacity
                 key={index}

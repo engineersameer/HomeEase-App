@@ -7,6 +7,7 @@ const Report = require('../models/Report');
 const Content = require('../models/Content');
 const Maintenance = require('../models/Maintenance');
 const PDFDocument = require('pdfkit');
+const ServiceCategory = require('../models/ServiceCategory');
 
 // Admin Profile Management
 const updateAdminProfile = async (req, res) => {
@@ -750,6 +751,68 @@ const completeMaintenance = async (req, res) => {
   }
 };
 
+// Service Category Management
+const createServiceCategory = async (req, res) => {
+  try {
+    const { serviceCategory } = req.body;
+    if (!serviceCategory) {
+      return res.status(400).json({ success: false, message: 'Service category is required.' });
+    }
+    const existing = await ServiceCategory.findOne({ serviceCategory });
+    if (existing) {
+      return res.status(409).json({ success: false, message: 'Service category already exists.' });
+    }
+    const newCategory = new ServiceCategory({ serviceCategory });
+    await newCategory.save();
+    res.status(201).json({ success: true, data: newCategory });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to create service category.', error: error.message });
+  }
+};
+
+const getServiceCategories = async (req, res) => {
+  try {
+    const categories = await ServiceCategory.find().sort({ createdAt: -1 });
+    res.status(200).json({ success: true, data: categories });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch service categories.', error: error.message });
+  }
+};
+
+const updateServiceCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { serviceCategory } = req.body;
+    if (!serviceCategory) {
+      return res.status(400).json({ success: false, message: 'Service category is required.' });
+    }
+    const updated = await ServiceCategory.findByIdAndUpdate(
+      id,
+      { serviceCategory },
+      { new: true, runValidators: true }
+    );
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Service category not found.' });
+    }
+    res.status(200).json({ success: true, data: updated });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update service category.', error: error.message });
+  }
+};
+
+const deleteServiceCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = await ServiceCategory.findByIdAndDelete(id);
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'Service category not found.' });
+    }
+    res.status(200).json({ success: true, message: 'Service category deleted.' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to delete service category.', error: error.message });
+  }
+};
+
 module.exports = {
   // Profile Management
   updateAdminProfile,
@@ -789,5 +852,11 @@ module.exports = {
   createMaintenance,
   updateMaintenance,
   startMaintenance,
-  completeMaintenance
+  completeMaintenance,
+
+  // Service Category Management
+  createServiceCategory,
+  getServiceCategories,
+  updateServiceCategory,
+  deleteServiceCategory
 }; 
