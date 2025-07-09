@@ -3,6 +3,8 @@ import { View } from 'react-native';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
 import ProviderFooter from './shared/Footer';
+import ProviderEarnings from './earnings';
+import ProviderReviews from './reviews';
 
 export default function ProviderLayout() {
   const { theme } = useTheme();

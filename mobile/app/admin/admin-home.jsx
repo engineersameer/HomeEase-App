@@ -180,7 +180,7 @@ export default function AdminHome() {
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           {/* Minimalist Refresh Button */}
           <TouchableOpacity onPress={onRefresh} style={{ padding: 8, marginRight: 8 }}>
-            <Ionicons name="refresh" size={22} color={theme.textDark} />
+            <Text style={{ fontSize: 20, color: theme.textDark }}>⟳</Text>
           </TouchableOpacity>
           {/* Minimalist Dark Mode Toggle */}
           <TouchableOpacity onPress={toggleTheme} style={{ padding: 8 }}>
@@ -426,7 +426,6 @@ export default function AdminHome() {
           </View>
         </View>
       </ScrollView>
-      <AdminFooter theme={theme} router={router} current="home" />
     </SafeAreaView>
   );
 } 

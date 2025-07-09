@@ -17,6 +17,7 @@ import { Colors, Fonts } from '../../Color/Color';
 import { useTheme } from '../../context/ThemeContext';
 import { getApiUrl, apiCall, API_CONFIG, getApiUrlWithParams } from '../../config/api';
 import { Ionicons } from '@expo/vector-icons';
+import AdminFooter from './shared/Footer';
 
 export default function AdminUsers() {
   const router = useRouter();
@@ -307,7 +308,7 @@ export default function AdminUsers() {
         <View style={{ width: 32 }} />
       </View>
 
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1, backgroundColor: theme.background }} contentContainerStyle={{ paddingBottom: 80 }} showsVerticalScrollIndicator={false}>
         {/* Search and Filters */}
         <View style={{ padding: 24 }}>
           {/* Search Input with Icon */}

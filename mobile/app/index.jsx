@@ -122,9 +122,9 @@ export default function WelcomeScreen() {
             marginBottom: 30,
           }}>
             <View style={{
-              width: 120,
-              height: 120,
-              borderRadius: 60,
+              width: 180, // increased from 120
+              height: 180, // increased from 120
+              borderRadius: 90, // increased from 60
               backgroundColor: '#fff',
               justifyContent: 'center',
               alignItems: 'center',
@@ -137,9 +137,9 @@ export default function WelcomeScreen() {
               <Image
                 source={require('../assets/logo.png')}
                 style={{ 
-                  width: 80, 
-                  height: 80,
-                  borderRadius: 40,
+                  width: 130, // increased from 80
+                  height: 130, // increased from 80
+                  borderRadius: 65, // increased from 40
                 }}
                 resizeMode="contain"
               />
@@ -217,6 +217,35 @@ export default function WelcomeScreen() {
               fontFamily: Fonts.subheading,
             }}>
               Continue as Customer
+            </Text>
+          </TouchableOpacity>
+
+          {/* Service Provider Button */}
+          <TouchableOpacity
+            onPress={() => router.push('/provider-signin')}
+            style={{
+              width: '100%',
+              backgroundColor: '#10B981',
+              paddingVertical: 16,
+              paddingHorizontal: 24,
+              borderRadius: 12,
+              marginBottom: 16,
+              shadowColor: '#10B981',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.2,
+              shadowRadius: 8,
+              elevation: 4,
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={{
+              fontSize: 16,
+              fontWeight: '600',
+              color: '#fff',
+              textAlign: 'center',
+              fontFamily: Fonts.subheading,
+            }}>
+              Continue as Service Provider
             </Text>
           </TouchableOpacity>
 

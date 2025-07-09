@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { Stack } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { View, Text, StyleSheet, Alert } from 'react-native';
+import { Slot, useRouter, useSegments } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../../Color/Color';
 import { ActivityIndicator } from 'react-native';
-import { getApiUrl, apiCall, API_CONFIG } from '../../config/api';
+import AdminFooter from './shared/Footer';
 
 export default function AdminLayout() {
   const router = useRouter();
+  const segments = useSegments();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -24,31 +23,23 @@ export default function AdminLayout() {
       const userData = await AsyncStorage.getItem('user');
       
       if (!token || userRole !== 'admin' || !userData) {
-        console.log('No admin auth data found, redirecting to home');
         await AsyncStorage.removeItem('token');
         await AsyncStorage.removeItem('user');
         await AsyncStorage.removeItem('userRole');
         router.replace('/');
         return;
       }
-
-      // Check if user data has admin role
       const user = JSON.parse(userData);
       if (user.role !== 'admin') {
-        console.log('User is not admin, redirecting to home');
         await AsyncStorage.removeItem('token');
         await AsyncStorage.removeItem('user');
         await AsyncStorage.removeItem('userRole');
         router.replace('/');
         return;
       }
-
-      console.log('Admin auth check passed');
       setIsAuthenticated(true);
       setLoading(false);
-      
     } catch (error) {
-      console.log('Auth check error:', error);
       await AsyncStorage.removeItem('token');
       await AsyncStorage.removeItem('user');
       await AsyncStorage.removeItem('userRole');
@@ -56,26 +47,6 @@ export default function AdminLayout() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Logout', 
-          style: 'destructive',
-          onPress: async () => {
-            await AsyncStorage.removeItem('token');
-            await AsyncStorage.removeItem('user');
-            await AsyncStorage.removeItem('userRole');
-            router.replace('/');
-          }
-        }
-      ]
-    );
   };
 
   if (loading) {
@@ -98,21 +69,22 @@ export default function AdminLayout() {
     return null; // Will redirect to signin
   }
 
+  // Determine current tab based on route segment
+  const lastSegment = segments[segments.length - 1];
+  let current = 'home';
+  if (lastSegment === 'admin-users') current = 'users';
+  else if (lastSegment === 'admin-reports') current = 'reports';
+  else if (lastSegment === 'admin-profile') current = 'profile';
+  else if (lastSegment === 'admin-home') current = 'home';
+
+  // Only show footer on main admin tabs
+  const showFooter = ['home', 'users', 'reports', 'profile'].includes(current);
+
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        gestureEnabled: false
-      }}
-    >
-      <Stack.Screen name="admin-home" />
-      <Stack.Screen name="admin-users" />
-      <Stack.Screen name="admin-profile" />
-      <Stack.Screen name="admin-complaints" />
-      <Stack.Screen name="admin-reports" />
-      <Stack.Screen name="admin-content" />
-      <Stack.Screen name="admin-maintenance" />
-    </Stack>
+    <View style={{ flex: 1 }}>
+      <Slot />
+      {showFooter && <AdminFooter theme={Colors.light} router={router} current={current} />}
+    </View>
   );
 }
 

@@ -8,20 +8,17 @@ dotenv.config();
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/homeease';
 
-db();
-
 async function seedAdmin() {
-  await mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
   const adminEmail = 'admin@homeease.com';
   const adminPassword = 'admin123'; // Change after first login!
 
+  console.log('Checking for existing admin user...');
   const existing = await User.findOne({ email: adminEmail, role: 'admin' });
   if (existing) {
     console.log('Admin user already exists:', existing.email);
-    mongoose.disconnect();
     return;
   }
-
+  console.log('No existing admin found. Creating new admin...');
   const admin = new User({
     name: 'Super Admin',
     email: adminEmail,
@@ -39,9 +36,13 @@ async function seedAdmin() {
       isSuperAdmin: true
     }
   });
-  await admin.save();
-  console.log('Admin user created:', admin.email);
-  mongoose.disconnect();
+  try {
+    console.log('Saving new admin user...');
+    await admin.save();
+    console.log('Admin user created:', admin.email);
+  } catch (err) {
+    console.error('Error creating admin user:', err);
+  }
 }
 
 async function seedMaintenance() {
@@ -68,9 +69,16 @@ async function seedMaintenance() {
   }
 }
 
-seedAdmin().catch(err => {
-  console.error('Seeding error:', err);
-  mongoose.disconnect();
-});
+async function main() {
+  try {
+    await mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+    await seedAdmin();
+    await seedMaintenance();
+  } catch (err) {
+    console.error('Seeding error:', err);
+  } finally {
+    mongoose.disconnect();
+  }
+}
 
-seedMaintenance(); 
+main(); 

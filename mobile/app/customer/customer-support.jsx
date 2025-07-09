@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, Fonts } from '../../Color/Color';
 import Footer from '../customer/shared/Footer';
 import { useTheme } from '../../context/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function CustomerSupport() {
   const router = useRouter();
@@ -250,21 +251,19 @@ export default function CustomerSupport() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-      {/* Consistent Header */}
+      {/* Header */}
       <View style={{
         backgroundColor: theme.card,
-       
-        paddingTop: 51,
-        paddingBottom: 24,
+        paddingTop: 45,
+        paddingBottom: 16,
         paddingHorizontal: 24,
         borderBottomWidth: 1,
         borderBottomColor: theme.border,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'flex-start',
       }}>
         <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 12 }}>
-          <Text style={{ fontSize: 22, color: theme.textDark }}>{'←'}</Text>
+          <Ionicons name="arrow-back" size={24} color={theme.textDark} />
         </TouchableOpacity>
         <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.textDark, fontFamily: Fonts.heading }}>
           Support

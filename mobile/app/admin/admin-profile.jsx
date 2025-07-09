@@ -16,6 +16,7 @@ import { useTheme } from '../../context/ThemeContext';
 import FloatingInput from './shared/FloatingInput';
 import { getApiUrl, apiCall, API_CONFIG } from '../../config/api';
 import { MaterialIcons } from '@expo/vector-icons';
+import AdminFooter from './shared/Footer';
 
 export default function AdminProfile() {
   const router = useRouter();

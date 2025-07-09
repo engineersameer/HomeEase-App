@@ -190,37 +190,10 @@ export default function CustomerHome() {
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 80 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Continue as Service Provider Button */}
-        <View style={{
-          paddingHorizontal: 24,
-          paddingTop: 16,
-          marginBottom: 16,
-        }}>
-          <TouchableOpacity
-            onPress={() => handleQuickAction('provider')}
-            style={{
-              backgroundColor: theme.primary,
-              borderRadius: 12,
-              padding: 16,
-              borderWidth: 1,
-              borderColor: theme.primary,
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{
-              fontSize: 16,
-              fontWeight: '600',
-              color: '#FFFFFF',
-              fontFamily: Fonts.body,
-            }}>
-              🔧 Continue as Service Provider
-            </Text>
-          </TouchableOpacity>
-        </View>
-
         {/* Dashboard Stats */}
         <View style={{
           paddingHorizontal: 24,
+          marginTop: 24,
           marginBottom: 24,
         }}>
           <Text style={{

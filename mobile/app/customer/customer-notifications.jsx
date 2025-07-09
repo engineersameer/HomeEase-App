@@ -14,6 +14,7 @@ import axios from 'axios';
 import { Colors, Fonts } from '../../Color/Color';
 import { useTheme } from '../../context/ThemeContext';
 import { getApiUrl, apiCall, API_CONFIG } from '../../config/api';
+import { Ionicons } from '@expo/vector-icons';
 
 const API_URL = 'http://192.168.100.5:5000/api/customer/notifications';
 
@@ -181,7 +182,7 @@ export default function CustomerNotifications() {
         justifyContent: 'flex-start',
       }}>
         <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 12 }}>
-          <Text style={{ fontSize: 22, color: theme.textDark }}>{'←'}</Text>
+          <Ionicons name="arrow-back" size={24} color={theme.textDark} />
         </TouchableOpacity>
         <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.textDark, fontFamily: Fonts.heading }}>
           Notifications

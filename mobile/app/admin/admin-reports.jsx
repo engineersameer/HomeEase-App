@@ -22,6 +22,7 @@ import { getApiUrl, apiCall, API_CONFIG } from '../../config/api';
 import * as Linking from 'expo-linking';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import AdminFooter from './shared/Footer';
 
 export default function AdminReports() {
   const router = useRouter();
@@ -196,308 +197,310 @@ export default function AdminReports() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.background} />
-      {/* Header */}
-      <View style={{
-        backgroundColor: theme.card,
-        paddingTop: 45,
-        paddingBottom: 12,
-        paddingHorizontal: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: theme.border,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 4,
-        elevation: 2,
-      }}>
-        <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 8, padding: 6 }}>
-          <Ionicons name="arrow-back" size={26} color={theme.textDark} />
-        </TouchableOpacity>
-        <Text style={{
-          fontSize: 22,
-          fontWeight: 'bold',
-          color: theme.textDark,
-          fontFamily: Fonts.heading,
-          flex: 1,
-          textAlign: 'center',
+    <>
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.background} />
+        {/* Header */}
+        <View style={{
+          backgroundColor: theme.card,
+          paddingTop: 45,
+          paddingBottom: 12,
+          paddingHorizontal: 20,
+          borderBottomWidth: 1,
+          borderBottomColor: theme.border,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.04,
+          shadowRadius: 4,
+          elevation: 2,
         }}>
-          Reports & Analytics
-        </Text>
-        <View style={{ width: 32 }} />
-      </View>
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-        <View style={{ padding: 24 }}>
-          {/* Search Input with Icon */}
-          <View style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: theme.card,
-            borderRadius: 24,
-            borderWidth: 1,
-            borderColor: theme.border,
-            paddingHorizontal: 16,
-            marginBottom: 18,
-            height: 44,
-          }}>
-            <Ionicons name="search" size={20} color={theme.textLight} style={{ marginRight: 8 }} />
-            <TextInput
-              style={{
-                flex: 1,
-                color: theme.textDark,
-                fontFamily: Fonts.body,
-                fontSize: 16,
-                backgroundColor: 'transparent',
-                paddingVertical: 0,
-              }}
-              placeholder="Search reports by title or type..."
-              placeholderTextColor={theme.textLight}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              underlineColorAndroid="transparent"
-            />
-          </View>
-          {/* Filter Buttons */}
-          <View style={{ marginBottom: 18 }}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-              {[
-                { key: 'all', label: `All (${reports.length})` },
-                { key: 'revenue', label: `Revenue` },
-                { key: 'users', label: `Users` },
-                { key: 'providers', label: `Providers` },
-              ].map(item => (
-                <TouchableOpacity
-                  key={item.key}
-                  style={{
-                    backgroundColor: selectedType === item.key ? theme.primary : theme.card,
-                    borderRadius: 20,
-                    paddingHorizontal: 18,
-                    paddingVertical: 8,
-                    borderWidth: 1,
-                    borderColor: selectedType === item.key ? theme.primary : theme.border,
-                    minWidth: 80,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                  onPress={() => setSelectedType(item.key)}
-                >
-                  <Text style={{
-                    color: selectedType === item.key ? '#fff' : theme.textDark,
-                    fontFamily: Fonts.body,
-                    fontSize: 14,
-                    fontWeight: '600',
-                  }}>{item.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-          {/* Generate Report Button */}
-          <View style={{ alignItems: 'flex-start', marginBottom: 18 }}>
-            <TouchableOpacity onPress={() => setShowDialog(true)} style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: theme.primary, paddingVertical: 10, paddingHorizontal: 18, borderRadius: 20 }}>
-              <Ionicons name="add" size={18} color="#111" />
-              <Text style={{ marginLeft: 6, color: '#111', fontWeight: '600', fontSize: 15 }}>Generate Report</Text>
-            </TouchableOpacity>
-          </View>
-          {/* Section Heading */}
+          <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 8, padding: 6 }}>
+            <Ionicons name="arrow-back" size={26} color={theme.textDark} />
+          </TouchableOpacity>
           <Text style={{
-            fontSize: 16,
-            fontWeight: '600',
+            fontSize: 22,
+            fontWeight: 'bold',
             color: theme.textDark,
-            fontFamily: Fonts.subheading,
-            marginBottom: 12
+            fontFamily: Fonts.heading,
+            flex: 1,
+            textAlign: 'center',
           }}>
-            Generated Reports ({filteredReports.length})
+            Reports & Analytics
           </Text>
-          {/* Reports List */}
-          {filteredReports.map((report, idx) => (
-            <Animated.View
-              key={report._id}
-              style={{
-                opacity: fadeAnims[idx],
-                transform: [{ translateY: slideAnims[idx] }],
-                marginBottom: 14,
-              }}
-            >
-              <View
+          <View style={{ width: 32 }} />
+        </View>
+        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+          <View style={{ padding: 24 }}>
+            {/* Search Input with Icon */}
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: theme.card,
+              borderRadius: 24,
+              borderWidth: 1,
+              borderColor: theme.border,
+              paddingHorizontal: 16,
+              marginBottom: 18,
+              height: 44,
+            }}>
+              <Ionicons name="search" size={20} color={theme.textLight} style={{ marginRight: 8 }} />
+              <TextInput
                 style={{
-                  backgroundColor: theme.card,
-                  borderRadius: 14,
-                  padding: 18,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  minHeight: 70,
+                  flex: 1,
+                  color: theme.textDark,
+                  fontFamily: Fonts.body,
+                  fontSize: 16,
+                  backgroundColor: 'transparent',
+                  paddingVertical: 0,
+                }}
+                placeholder="Search reports by title or type..."
+                placeholderTextColor={theme.textLight}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                underlineColorAndroid="transparent"
+              />
+            </View>
+            {/* Filter Buttons */}
+            <View style={{ marginBottom: 18 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                {[
+                  { key: 'all', label: `All (${reports.length})` },
+                  { key: 'revenue', label: `Revenue` },
+                  { key: 'users', label: `Users` },
+                  { key: 'providers', label: `Providers` },
+                ].map(item => (
+                  <TouchableOpacity
+                    key={item.key}
+                    style={{
+                      backgroundColor: selectedType === item.key ? theme.primary : theme.card,
+                      borderRadius: 20,
+                      paddingHorizontal: 18,
+                      paddingVertical: 8,
+                      borderWidth: 1,
+                      borderColor: selectedType === item.key ? theme.primary : theme.border,
+                      minWidth: 80,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                    onPress={() => setSelectedType(item.key)}
+                  >
+                    <Text style={{
+                      color: selectedType === item.key ? '#fff' : theme.textDark,
+                      fontFamily: Fonts.body,
+                      fontSize: 14,
+                      fontWeight: '600',
+                    }}>{item.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+            {/* Generate Report Button */}
+            <View style={{ alignItems: 'flex-start', marginBottom: 18 }}>
+              <TouchableOpacity onPress={() => setShowDialog(true)} style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: theme.primary, paddingVertical: 10, paddingHorizontal: 18, borderRadius: 20 }}>
+                <Ionicons name="add" size={18} color="#111" />
+                <Text style={{ marginLeft: 6, color: '#111', fontWeight: '600', fontSize: 15 }}>Generate Report</Text>
+              </TouchableOpacity>
+            </View>
+            {/* Section Heading */}
+            <Text style={{
+              fontSize: 16,
+              fontWeight: '600',
+              color: theme.textDark,
+              fontFamily: Fonts.subheading,
+              marginBottom: 12
+            }}>
+              Generated Reports ({filteredReports.length})
+            </Text>
+            {/* Reports List */}
+            {filteredReports.map((report, idx) => (
+              <Animated.View
+                key={report._id}
+                style={{
+                  opacity: fadeAnims[idx],
+                  transform: [{ translateY: slideAnims[idx] }],
+                  marginBottom: 14,
                 }}
               >
-                <View style={{ flex: 1 }}>
-                  <Text style={{
-                    fontSize: 16,
-                    fontWeight: '600',
-                    color: theme.textDark,
-                    fontFamily: Fonts.heading,
-                    marginBottom: 1,
-                  }}>{report.title || report.type}</Text>
-                  <Text style={{
-                    fontSize: 13,
-                    color: theme.textLight,
-                    fontFamily: Fonts.body,
-                    marginBottom: 1,
-                  }}>{formatDate(report.createdAt)}</Text>
-                  <Text style={{
-                    fontSize: 11,
-                    color: theme.textLight,
-                    fontFamily: Fonts.body,
-                  }}>Status: {report.status}</Text>
-                </View>
-                <TouchableOpacity
+                <View
                   style={{
-                    backgroundColor: '#F3F4F6',
-                    borderRadius: 20,
-                    paddingVertical: 8,
-                    paddingHorizontal: 14,
-                    alignItems: 'center',
+                    backgroundColor: theme.card,
+                    borderRadius: 14,
+                    padding: 18,
                     borderWidth: 1,
-                    borderColor: theme.primary,
-                    marginLeft: 8,
+                    borderColor: theme.border,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    minHeight: 70,
                   }}
-                  activeOpacity={0.8}
-                  onPress={() => handleExportReport(report._id)}
                 >
-                  <Ionicons name="download-outline" size={18} color={theme.primary} />
-                </TouchableOpacity>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{
+                      fontSize: 16,
+                      fontWeight: '600',
+                      color: theme.textDark,
+                      fontFamily: Fonts.heading,
+                      marginBottom: 1,
+                    }}>{report.title || report.type}</Text>
+                    <Text style={{
+                      fontSize: 13,
+                      color: theme.textLight,
+                      fontFamily: Fonts.body,
+                      marginBottom: 1,
+                    }}>{formatDate(report.createdAt)}</Text>
+                    <Text style={{
+                      fontSize: 11,
+                      color: theme.textLight,
+                      fontFamily: Fonts.body,
+                    }}>Status: {report.status}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={{
+                      backgroundColor: '#F3F4F6',
+                      borderRadius: 20,
+                      paddingVertical: 8,
+                      paddingHorizontal: 14,
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: theme.primary,
+                      marginLeft: 8,
+                    }}
+                    activeOpacity={0.8}
+                    onPress={() => handleExportReport(report._id)}
+                  >
+                    <Ionicons name="download-outline" size={18} color={theme.primary} />
+                  </TouchableOpacity>
+                </View>
+              </Animated.View>
+            ))}
+            {filteredReports.length === 0 && (
+              <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+                <Text style={{
+                  fontSize: 16,
+                  color: theme.textLight,
+                  fontFamily: Fonts.body,
+                }}>
+                  No reports found
+                </Text>
               </View>
-            </Animated.View>
-          ))}
-          {filteredReports.length === 0 && (
-            <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-              <Text style={{
-                fontSize: 16,
-                color: theme.textLight,
-                fontFamily: Fonts.body,
-              }}>
-                No reports found
-              </Text>
-            </View>
-          )}
-        </View>
-      </ScrollView>
-      {/* Generate Report Modal */}
-      <Modal visible={showDialog} transparent animationType="fade">
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#00000066' }}>
-          <View style={{ backgroundColor: theme.card, padding: 20, borderRadius: 14, width: '90%', maxWidth: 400 }}>
-            <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.textDark, marginBottom: 14, fontFamily: Fonts.heading }}>Generate New Report</Text>
-            {/* Report Title */}
-            <Text style={{ fontSize: 14, color: theme.textDark, marginBottom: 4, fontWeight: '600' }}>Report Title</Text>
-            <Animated.View style={[inputStyle(theme), { marginBottom: 10 }]}> 
-              <TextInput
-                placeholder="Enter report title"
-                placeholderTextColor={theme.textLight}
-                value={reportTitle}
-                onChangeText={setReportTitle}
-                style={{ color: theme.textDark, fontSize: 14, fontFamily: Fonts.body, padding: 0, backgroundColor: 'transparent' }}
-              />
-            </Animated.View>
-            {/* Report Type */}
-            <Text style={{ fontSize: 14, color: theme.textDark, marginBottom: 4, fontWeight: '600' }}>Report Type</Text>
-            <View style={[inputStyle(theme), { marginBottom: 10, flexDirection: 'row', alignItems: 'center', paddingVertical: 0 }]}> 
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                {[
-                  { key: 'revenue_analytics', label: 'Revenue Analytics' },
-                  { key: 'booking_analytics', label: 'Booking Analytics' },
-                  { key: 'user_growth', label: 'User Growth' },
-                  { key: 'provider_performance', label: 'Provider Performance' },
-                  { key: 'complaint_analytics', label: 'Complaint Analytics' },
-                  { key: 'custom', label: 'Custom' },
-                ].map(item => (
-                  <TouchableOpacity
-                    key={item.key}
-                    style={{
-                      backgroundColor: reportType === item.key ? theme.primary : theme.card,
-                      borderRadius: 16,
-                      paddingHorizontal: 12,
-                      paddingVertical: 6,
-                      borderWidth: 1,
-                      borderColor: reportType === item.key ? theme.primary : theme.border,
-                      minWidth: 60,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                    onPress={() => setReportType(item.key)}
-                  >
-                    <Text style={{ color: reportType === item.key ? '#fff' : theme.textDark, fontFamily: Fonts.body, fontSize: 13 }}>{item.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-            {/* Description */}
-            <Text style={{ fontSize: 14, color: theme.textDark, marginBottom: 4, fontWeight: '600' }}>Description</Text>
-            <Animated.View style={[inputStyle(theme), { minHeight: 40, marginBottom: 10 }]}> 
-              <TextInput
-                placeholder="Describe the purpose of this report (optional)"
-                placeholderTextColor={theme.textLight}
-                value={description}
-                onChangeText={setDescription}
-                style={{ color: theme.textDark, fontSize: 14, fontFamily: Fonts.body, padding: 0, backgroundColor: 'transparent' }}
-                multiline
-              />
-            </Animated.View>
-            {/* Group By */}
-            <Text style={{ fontSize: 14, color: theme.textDark, marginBottom: 4, fontWeight: '600' }}>Group By</Text>
-            <View style={[inputStyle(theme), { marginBottom: 10, flexDirection: 'row', alignItems: 'center', paddingVertical: 0 }]}> 
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                {[
-                  { key: 'day', label: 'Day' },
-                  { key: 'week', label: 'Week' },
-                  { key: 'month', label: 'Month' },
-                  { key: 'quarter', label: 'Quarter' },
-                  { key: 'year', label: 'Year' },
-                ].map(item => (
-                  <TouchableOpacity
-                    key={item.key}
-                    style={{
-                      backgroundColor: groupBy === item.key ? theme.primary : theme.card,
-                      borderRadius: 16,
-                      paddingHorizontal: 12,
-                      paddingVertical: 6,
-                      borderWidth: 1,
-                      borderColor: groupBy === item.key ? theme.primary : theme.border,
-                      minWidth: 60,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                    onPress={() => setGroupBy(item.key)}
-                  >
-                    <Text style={{ color: groupBy === item.key ? '#fff' : theme.textDark, fontFamily: Fonts.body, fontSize: 13 }}>{item.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10 }}>
-              <TouchableOpacity onPress={() => {
-                setShowDialog(false);
-                setReportTitle('');
-                setReportType('revenue_analytics');
-                setDescription('');
-                setGroupBy('month');
-              }} style={{ marginRight: 10 }}><Text style={{ color: theme.textDark, fontSize: 15 }}>Cancel</Text></TouchableOpacity>
-              <TouchableOpacity onPress={async () => {
-                await handleGenerateReport();
-                setShowDialog(false);
-                setReportTitle('');
-                setReportType('revenue_analytics');
-                setDescription('');
-                setGroupBy('month');
-              }}><Text style={{ color: theme.primary, fontSize: 15 }}>Generate</Text></TouchableOpacity>
+            )}
+          </View>
+        </ScrollView>
+        {/* Generate Report Modal */}
+        <Modal visible={showDialog} transparent animationType="fade">
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#00000066' }}>
+            <View style={{ backgroundColor: theme.card, padding: 20, borderRadius: 14, width: '90%', maxWidth: 400 }}>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.textDark, marginBottom: 14, fontFamily: Fonts.heading }}>Generate New Report</Text>
+              {/* Report Title */}
+              <Text style={{ fontSize: 14, color: theme.textDark, marginBottom: 4, fontWeight: '600' }}>Report Title</Text>
+              <Animated.View style={[inputStyle(theme), { marginBottom: 10 }]}> 
+                <TextInput
+                  placeholder="Enter report title"
+                  placeholderTextColor={theme.textLight}
+                  value={reportTitle}
+                  onChangeText={setReportTitle}
+                  style={{ color: theme.textDark, fontSize: 14, fontFamily: Fonts.body, padding: 0, backgroundColor: 'transparent' }}
+                />
+              </Animated.View>
+              {/* Report Type */}
+              <Text style={{ fontSize: 14, color: theme.textDark, marginBottom: 4, fontWeight: '600' }}>Report Type</Text>
+              <View style={[inputStyle(theme), { marginBottom: 10, flexDirection: 'row', alignItems: 'center', paddingVertical: 0 }]}> 
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                  {[
+                    { key: 'revenue_analytics', label: 'Revenue Analytics' },
+                    { key: 'booking_analytics', label: 'Booking Analytics' },
+                    { key: 'user_growth', label: 'User Growth' },
+                    { key: 'provider_performance', label: 'Provider Performance' },
+                    { key: 'complaint_analytics', label: 'Complaint Analytics' },
+                    { key: 'custom', label: 'Custom' },
+                  ].map(item => (
+                    <TouchableOpacity
+                      key={item.key}
+                      style={{
+                        backgroundColor: reportType === item.key ? theme.primary : theme.card,
+                        borderRadius: 16,
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderWidth: 1,
+                        borderColor: reportType === item.key ? theme.primary : theme.border,
+                        minWidth: 60,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      onPress={() => setReportType(item.key)}
+                    >
+                      <Text style={{ color: reportType === item.key ? '#fff' : theme.textDark, fontFamily: Fonts.body, fontSize: 13 }}>{item.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+              {/* Description */}
+              <Text style={{ fontSize: 14, color: theme.textDark, marginBottom: 4, fontWeight: '600' }}>Description</Text>
+              <Animated.View style={[inputStyle(theme), { minHeight: 40, marginBottom: 10 }]}> 
+                <TextInput
+                  placeholder="Describe the purpose of this report (optional)"
+                  placeholderTextColor={theme.textLight}
+                  value={description}
+                  onChangeText={setDescription}
+                  style={{ color: theme.textDark, fontSize: 14, fontFamily: Fonts.body, padding: 0, backgroundColor: 'transparent' }}
+                  multiline
+                />
+              </Animated.View>
+              {/* Group By */}
+              <Text style={{ fontSize: 14, color: theme.textDark, marginBottom: 4, fontWeight: '600' }}>Group By</Text>
+              <View style={[inputStyle(theme), { marginBottom: 10, flexDirection: 'row', alignItems: 'center', paddingVertical: 0 }]}> 
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                  {[
+                    { key: 'day', label: 'Day' },
+                    { key: 'week', label: 'Week' },
+                    { key: 'month', label: 'Month' },
+                    { key: 'quarter', label: 'Quarter' },
+                    { key: 'year', label: 'Year' },
+                  ].map(item => (
+                    <TouchableOpacity
+                      key={item.key}
+                      style={{
+                        backgroundColor: groupBy === item.key ? theme.primary : theme.card,
+                        borderRadius: 16,
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderWidth: 1,
+                        borderColor: groupBy === item.key ? theme.primary : theme.border,
+                        minWidth: 60,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      onPress={() => setGroupBy(item.key)}
+                    >
+                      <Text style={{ color: groupBy === item.key ? '#fff' : theme.textDark, fontFamily: Fonts.body, fontSize: 13 }}>{item.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10 }}>
+                <TouchableOpacity onPress={() => {
+                  setShowDialog(false);
+                  setReportTitle('');
+                  setReportType('revenue_analytics');
+                  setDescription('');
+                  setGroupBy('month');
+                }} style={{ marginRight: 10 }}><Text style={{ color: theme.textDark, fontSize: 15 }}>Cancel</Text></TouchableOpacity>
+                <TouchableOpacity onPress={async () => {
+                  await handleGenerateReport();
+                  setShowDialog(false);
+                  setReportTitle('');
+                  setReportType('revenue_analytics');
+                  setDescription('');
+                  setGroupBy('month');
+                }}><Text style={{ color: theme.primary, fontSize: 15 }}>Generate</Text></TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
-    </SafeAreaView>
+        </Modal>
+      </SafeAreaView>
+    </>
   );
 }
 

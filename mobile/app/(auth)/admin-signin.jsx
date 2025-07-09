@@ -12,14 +12,15 @@ import {
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, Fonts } from '../../Color/Color';
-import FloatingInput from '../customer/shared/FloatingInput';
-import { useTheme } from '../../context/ThemeContext';
+// REMOVE: import { useTheme } from '../../context/ThemeContext';
 import { getApiUrl, apiCall, API_CONFIG } from '../../config/api';
 import { Ionicons } from '@expo/vector-icons';
+import FloatingInput from '../customer/shared/FloatingInput';
 
 export default function AdminSignin() {
   const router = useRouter();
-  const { theme } = useTheme();
+  // REMOVE: const { theme } = useTheme();
+  const theme = Colors.light; // Always use light mode for admin sign in
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -133,6 +134,7 @@ export default function AdminSignin() {
             keyboardType="email-address"
             autoCapitalize="none"
             style={{ marginBottom: 20 }}
+            theme={theme}
           />
           
           <FloatingInput
@@ -141,6 +143,7 @@ export default function AdminSignin() {
             onChangeText={setPassword}
             secureTextEntry
             style={{ marginBottom: 32 }}
+            theme={theme}
           />
 
           {/* Sign In Button */}
