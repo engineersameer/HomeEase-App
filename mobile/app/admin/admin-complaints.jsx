@@ -8,6 +8,7 @@ import {
   StatusBar,
   SafeAreaView,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -15,7 +16,7 @@ import { Colors, Fonts } from '../../Color/Color';
 import { useTheme } from '../../context/ThemeContext';
 import { getApiUrl, apiCall, API_CONFIG } from '../../config/api';
 import { Ionicons } from '@expo/vector-icons';
-import Animated from 'react-native-reanimated';
+import { Animated } from 'react-native';
 
 export default function AdminComplaints() {
   const router = useRouter();
@@ -135,14 +136,22 @@ export default function AdminComplaints() {
       case 'communication':
         return '💬';
       default:
-        return '📋';
+        return '��';
     }
   };
 
+  // Status filter counts
+  const pendingCount = complaints.filter(c => c.status === 'pending' || c.status === 'open').length;
+  const inProgressCount = complaints.filter(c => c.status === 'in_progress').length;
+  const resolvedCount = complaints.filter(c => c.status === 'resolved').length;
+
   // Filter complaints based on status
-  const filteredComplaints = complaints.filter(complaint => {
-    return selectedStatus === 'all' || complaint.status === selectedStatus;
-  });
+  const filteredComplaints = useMemo(() => {
+    if (!complaints || complaints.length === 0) return [];
+    if (selectedStatus === 'all') return complaints;
+    if (selectedStatus === 'pending') return complaints.filter(complaint => complaint.status === 'pending' || complaint.status === 'open');
+    return complaints.filter(complaint => complaint.status === selectedStatus);
+  }, [complaints, selectedStatus]);
 
   if (loading) {
     return (
@@ -206,9 +215,9 @@ export default function AdminComplaints() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
               {[
                 { key: 'all', label: `All (${complaints.length})` },
-                { key: 'pending', label: `Pending (${complaints.filter(c => c.status === 'pending').length})` },
-                { key: 'in_progress', label: `In Progress (${complaints.filter(c => c.status === 'in_progress').length})` },
-                { key: 'resolved', label: `Resolved (${complaints.filter(c => c.status === 'resolved').length})` },
+                { key: 'pending', label: `Pending (${pendingCount})` },
+                { key: 'in_progress', label: `In Progress (${inProgressCount})` },
+                { key: 'resolved', label: `Resolved (${resolvedCount})` },
               ].map(item => (
                 <TouchableOpacity
                   key={item.key}
@@ -248,228 +257,72 @@ export default function AdminComplaints() {
           </Text>
 
           {/* Complaints List */}
-          {filteredComplaints.map((complaint, idx) => (
-            <Animated.View
-              key={complaint._id}
-              style={{
-                opacity: fadeAnims[idx],
-                transform: [{ translateY: slideAnims[idx] }],
-                marginBottom: 14,
-              }}
-            >
-              <View
-                style={{
-                  backgroundColor: theme.card,
-                  borderRadius: 14,
-                  padding: 18,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  flexDirection: 'column',
-                  marginBottom: 0,
-                }}
-              >
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                      <Text style={{ fontSize: 20, marginRight: 8 }}>
-                        {getCategoryIcon(complaint.category)}
+          {(filteredComplaints && filteredComplaints.length > 0 ? filteredComplaints : complaints).map((complaint, idx) => {
+            return (
+              <View key={complaint._id} style={{ backgroundColor: theme.card, borderRadius: 14, padding: 18, borderWidth: 1, borderColor: theme.border, marginBottom: 18, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 }}>
+                <Text style={{ fontWeight: 'bold', fontSize: 16, color: theme.textDark, marginBottom: 4 }}>
+                  Booking ID: <Text style={{ color: theme.primary }}>{complaint.booking}</Text>
                       </Text>
-                      <Text style={{
-                        fontSize: 16,
-                        fontWeight: '600',
-                        color: theme.textDark,
-                        fontFamily: Fonts.subheading,
-                        flex: 1,
-                      }}>
-                        {complaint.title}
-                      </Text>
-                    </View>
-                    <Text style={{
-                      fontSize: 14,
-                      color: theme.textLight,
-                      fontFamily: Fonts.body,
-                      marginBottom: 8,
-                      lineHeight: 20,
-                    }}>
-                      {complaint.description}
-                    </Text>
-                    <Text style={{
-                      fontSize: 12,
-                      color: theme.textLight,
-                      fontFamily: Fonts.body,
-                    }}>
-                      {formatDate(complaint.createdAt)}
-                    </Text>
-                  </View>
-                  <View style={{ alignItems: 'flex-end', minWidth: 70 }}>
-                    <View style={{
-                      backgroundColor: getPriorityColor(complaint.priority),
-                      paddingHorizontal: 10,
-                      paddingVertical: 3,
-                      borderRadius: 12,
-                      marginBottom: 4,
-                    }}>
-                      <Text style={{
-                        fontSize: 11,
-                        color: '#fff',
-                        fontFamily: Fonts.body,
-                        textTransform: 'capitalize',
-                        fontWeight: '600',
-                      }}>
-                        {complaint.priority}
-                      </Text>
-                    </View>
-                    <View style={{
-                      backgroundColor: getStatusColor(complaint.status),
-                      paddingHorizontal: 10,
-                      paddingVertical: 3,
-                      borderRadius: 12,
-                    }}>
-                      <Text style={{
-                        fontSize: 11,
-                        color: '#fff',
-                        fontFamily: Fonts.body,
-                        textTransform: 'capitalize',
-                        fontWeight: '600',
-                      }}>
-                        {complaint.status.replace('_', ' ')}
-                      </Text>
-                    </View>
+                <Text style={{ color: theme.textDark, marginBottom: 4 }}>Description: <Text style={{ color: theme.textLight }}>{complaint.description}</Text></Text>
+                <Text style={{ color: theme.textDark, marginBottom: 4 }}>Provider: <Text style={{ color: theme.textLight }}>{complaint.provider?.name || 'N/A'}</Text></Text>
+                <Text style={{ color: theme.textDark, marginBottom: 4 }}>Date: <Text style={{ color: theme.textLight }}>{formatDate(complaint.createdAt)}</Text></Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                  <Text style={{ color: theme.textDark, fontWeight: 'bold' }}>Status: </Text>
+                  <View style={{ backgroundColor: getStatusColor(complaint.status), borderRadius: 8, paddingHorizontal: 10, paddingVertical: 3, marginLeft: 4 }}>
+                    <Text style={{ color: '#fff', fontWeight: 'bold', textTransform: 'capitalize' }}>{complaint.status.replace('_', ' ')}</Text>
                   </View>
                 </View>
-
-                {/* User Information */}
-                <View style={{
-                  backgroundColor: theme.background,
-                  borderRadius: 8,
-                  padding: 12,
-                  marginBottom: 12
-                }}>
-                  <Text style={{
-                    fontSize: 14,
-                    fontWeight: '600',
-                    color: theme.textDark,
-                    fontFamily: Fonts.subheading,
-                    marginBottom: 8,
-                  }}>
-                    Users Involved
+                <Text style={{ color: theme.textDark, marginBottom: 4 }}>
+                  Evidence: {complaint.attachments && complaint.attachments.length > 0 ? (
+                    <Text style={{ color: theme.primary, textDecorationLine: 'underline' }} onPress={() => {
+                      // Open evidence file in browser
+                      const url = `${API_CONFIG.BASE_URL}${complaint.attachments[0].url}`;
+                      Linking.openURL(url);
+                    }}>{complaint.attachments[0].filename}</Text>
+                  ) : 'No evidence'}
                   </Text>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <View>
-                      <Text style={{
-                        fontSize: 12,
-                        color: theme.textLight,
-                        fontFamily: Fonts.body,
-                      }}>
-                        Customer
-                      </Text>
-                      <Text style={{
-                        fontSize: 14,
-                        color: theme.textDark,
-                        fontFamily: Fonts.body,
-                        fontWeight: '500',
-                      }}>
-                        {complaint.customer?.name || 'Unknown'}
-                      </Text>
-                    </View>
-                    <View>
-                      <Text style={{
-                        fontSize: 12,
-                        color: theme.textLight,
-                        fontFamily: Fonts.body,
-                      }}>
-                        Provider
-                      </Text>
-                      <Text style={{
-                        fontSize: 14,
-                        color: theme.textDark,
-                        fontFamily: Fonts.body,
-                        fontWeight: '500',
-                      }}>
-                        {complaint.provider?.name || 'Unknown'}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-
-                {/* Action Buttons */}
-                {complaint.status === 'pending' && (
-                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                {/* Action Buttons for status change */}
+                {(complaint.status === 'open' || complaint.status === 'pending') && (
+                  <View style={{ flexDirection: 'row', marginTop: 10 }}>
                     <TouchableOpacity
-                      style={{
-                        backgroundColor: theme.card,
-                        borderRadius: 20,
-                        paddingVertical: 10,
-                        flex: 1,
-                        alignItems: 'center',
-                        borderWidth: 1,
-                        borderColor: '#3B82F6',
-                      }}
+                      style={{ backgroundColor: '#3B82F6', borderRadius: 8, padding: 10, marginRight: 10 }}
                       onPress={() => handleUpdateStatus(complaint._id, 'in_progress')}
                     >
-                      <Text style={{
-                        color: '#3B82F6',
-                        fontFamily: Fonts.body,
-                        fontSize: 15,
-                        fontWeight: '600',
-                      }}>
-                        Start Investigation
-                      </Text>
+                      <Text style={{ color: '#fff', fontWeight: 'bold' }}>Mark In Progress</Text>
                     </TouchableOpacity>
                   </View>
                 )}
-
                 {complaint.status === 'in_progress' && (
-                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <View style={{ flexDirection: 'row', marginTop: 10 }}>
                     <TouchableOpacity
-                      style={{
-                        backgroundColor: theme.card,
-                        borderRadius: 20,
-                        paddingVertical: 10,
-                        flex: 1,
-                        alignItems: 'center',
-                        borderWidth: 1,
-                        borderColor: '#10B981',
-                      }}
+                      style={{ backgroundColor: '#10B981', borderRadius: 8, padding: 10, marginRight: 10 }}
                       onPress={() => handleUpdateStatus(complaint._id, 'resolved')}
                     >
-                      <Text style={{
-                        color: '#10B981',
-                        fontFamily: Fonts.body,
-                        fontSize: 15,
-                        fontWeight: '600',
-                      }}>
-                        Mark Resolved
-                      </Text>
+                      <Text style={{ color: '#fff', fontWeight: 'bold' }}>Mark Resolved</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={{
-                        backgroundColor: theme.card,
-                        borderRadius: 20,
-                        paddingVertical: 10,
-                        flex: 1,
-                        alignItems: 'center',
-                        borderWidth: 1,
-                        borderColor: '#6B7280',
-                      }}
+                      style={{ backgroundColor: '#6B7280', borderRadius: 8, padding: 10 }}
                       onPress={() => handleUpdateStatus(complaint._id, 'closed')}
                     >
-                      <Text style={{
-                        color: '#6B7280',
-                        fontFamily: Fonts.body,
-                        fontSize: 15,
-                        fontWeight: '600',
-                      }}>
-                        Close
-                      </Text>
+                      <Text style={{ color: '#fff', fontWeight: 'bold' }}>Close</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+                {complaint.status === 'resolved' && (
+                  <View style={{ flexDirection: 'row', marginTop: 10 }}>
+                    <TouchableOpacity
+                      style={{ backgroundColor: '#6B7280', borderRadius: 8, padding: 10 }}
+                      onPress={() => handleUpdateStatus(complaint._id, 'closed')}
+                    >
+                      <Text style={{ color: '#fff', fontWeight: 'bold' }}>Close</Text>
                     </TouchableOpacity>
                   </View>
                 )}
               </View>
-            </Animated.View>
-          ))}
+            );
+          })}
 
-          {filteredComplaints.length === 0 && (
+          {(!filteredComplaints || filteredComplaints.length === 0) && (
             <View style={{ alignItems: 'center', paddingVertical: 40 }}>
               <Text style={{
                 fontSize: 16,

@@ -5,6 +5,8 @@ const User = require('../models/User');
 const Review = require('../models/Review');
 const Complaint = require('../models/Complaint');
 const ServiceCategory = require('../models/ServiceCategory');
+const path = require('path');
+const fs = require('fs');
 
 // Get provider dashboard stats
 exports.getDashboard = async (req, res) => {
@@ -453,22 +455,37 @@ exports.getComplaints = async (req, res) => {
 
 // Create a complaint
 exports.createComplaint = async (req, res) => {
+  console.log('--- Complaint API HIT ---');
+  console.log('BODY:', req.body);
+  console.log('FILE:', req.file);
+
   try {
-    const { subject, message } = req.body;
-    if (!subject || !message) {
-      return res.status(400).json({ success: false, message: 'Subject and message are required' });
+    const { bookingId, description } = req.body;
+    if (!bookingId || !description) {
+      return res.status(400).json({ success: false, message: 'Booking ID and description are required' });
+    }
+    let attachments = [];
+    if (req.file) {
+      attachments.push({
+        filename: req.file.filename,
+        url: `/uploads/complaints/${req.file.filename}`,
+        uploadedBy: req.user.id,
+        uploadedAt: new Date()
+      });
     }
     const complaint = new Complaint({
       provider: req.user.id,
-      subject,
-      message,
+      booking: bookingId,
+      description,
+      attachments,
       status: 'open'
     });
     await complaint.save();
+    console.log('Complaint saved:', complaint);
     res.status(201).json({ success: true, message: 'Complaint submitted', complaint });
   } catch (err) {
     console.error('Create complaint error:', err);
-    res.status(500).json({ success: false, message: 'Failed to submit complaint' });
+    res.status(500).json({ success: false, message: err.message || 'Failed to submit complaint' });
   }
 };
 

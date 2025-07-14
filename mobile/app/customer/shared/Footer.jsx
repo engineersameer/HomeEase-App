@@ -6,6 +6,7 @@ export default function Footer({ theme, router, current }) {
   const items = [
     { key: 'home', label: 'Home', icon: '🏠', route: '/customer/customer-home' },
     { key: 'orders', label: 'Orders', icon: '📦', route: '/customer/customer-bookings' },
+    { key: 'terms', label: 'Terms', icon: '📄', route: '/customer/customer-terms' },
     { key: 'profile', label: 'Profile', icon: '👤', route: '/customer/customer-profile' },
   ];
   return (

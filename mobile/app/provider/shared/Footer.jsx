@@ -5,6 +5,7 @@ export default function ProviderFooter({ theme, router, current, hideOptions }) 
   const items = [
     { key: 'home', label: 'Home', icon: '🏠', route: '/provider/welcome' },
     { key: 'orders', label: 'Orders', icon: '📦', route: '/provider/provider-orders' },
+    { key: 'terms', label: 'Terms', icon: '📄', route: '/provider/provider-terms' },
     { key: 'profile', label: 'Profile', icon: '👤', route: '/provider/provider-profile' },
   ];
   return (

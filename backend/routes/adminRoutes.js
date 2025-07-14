@@ -36,7 +36,7 @@ router.get('/dashboard', auth, adminAuth, async (req, res) => {
       { $match: { status: 'completed', paymentStatus: 'paid' } },
       { $group: { _id: null, total: { $sum: '$totalAmount' } } }
     ]);
-    const pendingComplaints = await Complaint.countDocuments({ status: 'pending' });
+    const pendingComplaints = await Complaint.countDocuments({ $or: [ { status: 'pending' }, { status: 'open' } ] });
     const activeServices = await Service.countDocuments({ isActive: true, isApproved: true });
     
     res.json({

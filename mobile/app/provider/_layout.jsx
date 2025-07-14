@@ -17,6 +17,8 @@ export default function ProviderLayout() {
       ? 'home'
       : segments[segments.length - 1] === 'provider-orders'
       ? 'orders'
+      : segments[segments.length - 1] === 'provider-terms'
+      ? 'terms'
       : segments[segments.length - 1] === 'provider-profile'
       ? 'profile'
       : segments[segments.length - 1] === 'your-services'
@@ -25,8 +27,8 @@ export default function ProviderLayout() {
       ? ''
       : '';
 
-  // Only show footer on Home, Orders, and Profile
-  const showFooter = ['home', 'orders', 'profile'].includes(current);
+  // Only show footer on Home, Orders, Terms, and Profile
+  const showFooter = ['home', 'orders', 'terms', 'profile'].includes(current);
   return (
     <View style={{ flex: 1 }}>
       <Slot />

@@ -6,6 +6,7 @@ export default function AdminFooter({ theme, router, current }) {
     { key: 'home', label: 'Home', icon: '🏠', route: '/admin/admin-home' },
     { key: 'users', label: 'Users', icon: '👥', route: '/admin/admin-users' },
     { key: 'reports', label: 'Reports', icon: '📊', route: '/admin/admin-reports' },
+    { key: 'terms', label: 'Terms', icon: '📄', route: '/admin/admin-terms' },
     { key: 'profile', label: 'Profile', icon: '👤', route: '/admin/admin-profile' },
   ];
   return (
