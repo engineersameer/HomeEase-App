@@ -2,9 +2,23 @@ const express = require('express');
 const router = express.Router();
 const providerController = require('../controllers/providerController');
 const auth = require('../middleware/auth');
+const multer = require('multer');
+const path = require('path');
 
 // Apply auth middleware to all routes
 router.use(auth);
+
+// Set up multer storage for complaints
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, '../uploads/complaints'));
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + '-' + file.originalname);
+  }
+});
+const upload = multer({ storage });
 
 // Dashboard
 router.get('/dashboard', providerController.getDashboard);
@@ -42,6 +56,6 @@ router.put('/profile', providerController.updateProviderProfile);
 
 // Complaints
 router.get('/complaints', providerController.getComplaints);
-router.post('/complaints', providerController.createComplaint);
+router.post('/complaints', upload.single('evidence'), providerController.createComplaint);
 
 module.exports = router;

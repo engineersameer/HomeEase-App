@@ -19,32 +19,16 @@ export default function ProviderComplaint() {
   const [sending, setSending] = useState(false);
   const [status, setStatus] = useState(''); // '', 'sent', 'under_action', 'resolved'
   const [refreshing, setRefreshing] = useState(false);
-  const [bookingOptions, setBookingOptions] = useState([]);
-  const [loadingBookings, setLoadingBookings] = useState(true);
-  const [noBookings, setNoBookings] = useState(false);
+  // Dummy booking options
+  const [bookingOptions] = useState([
+    { id: 'DUMMY-BOOK-001', label: 'DUMMY-BOOK-001' },
+    { id: 'DUMMY-BOOK-002', label: 'DUMMY-BOOK-002' },
+    { id: 'DUMMY-BOOK-003', label: 'DUMMY-BOOK-003' },
+  ]);
+  const [loadingBookings] = useState(false);
+  const [noBookings] = useState(false);
 
-  // Fetch bookings for provider
-  const fetchBookings = async () => {
-    setLoadingBookings(true);
-    setNoBookings(false);
-    try {
-      const token = await AsyncStorage.getItem('token');
-      const userData = await AsyncStorage.getItem('user');
-      const user = userData ? JSON.parse(userData) : null;
-      if (!user || !user._id) throw new Error('User not found');
-      const url = getApiUrlWithParams(API_CONFIG.ENDPOINTS.PROVIDER_BOOKINGS, { providerId: user._id });
-      const data = await apiCall(url);
-      setBookingOptions(data.bookings?.map(b => ({ id: b.bookingId, label: b.bookingId })) || []);
-    } catch (error) {
-      setBookingOptions([]);
-      setNoBookings(true);
-    }
-    setLoadingBookings(false);
-  };
-
-  useEffect(() => {
-    fetchBookings();
-  }, []);
+  // Remove fetchBookings and useEffect for bookings
 
   const pickEvidence = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -58,12 +42,40 @@ export default function ProviderComplaint() {
   };
 
   const handleSend = async () => {
+    if (!bookingId || !description) return;
     setSending(true);
-    // Mock sending logic
-    setTimeout(() => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('bookingId', bookingId);
+      formData.append('description', description);
+      if (evidence) {
+        formData.append('evidence', {
+          uri: evidence.uri,
+          name: evidence.fileName || evidence.name || 'evidence',
+          type: evidence.mimeType || evidence.type || 'application/octet-stream',
+        });
+      }
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.PROVIDER_COMPLAINTS), {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          // 'Content-Type': 'multipart/form-data', // isko bilkul mat likho!
+        },
+        body: formData,
+      });
+      if (response.ok) {
+        setStatus('sent');
+        Alert.alert('Success', 'Complaint sent successfully!');
+      } else {
+        setStatus('failed');
+        Alert.alert('Error', 'Failed to send complaint.');
+      }
+    } catch (err) {
+      setStatus('failed');
+      Alert.alert('Error', 'Failed to send complaint.');
+    }
       setSending(false);
-      setStatus('sent');
-    }, 1500);
   };
 
   // Refresh handler (reset form)
@@ -74,7 +86,6 @@ export default function ProviderComplaint() {
     setEvidence(null);
     setStatus('');
     setSending(false);
-    await fetchBookings();
     setTimeout(() => setRefreshing(false), 500); // Simulate refresh
   };
 

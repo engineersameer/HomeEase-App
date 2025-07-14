@@ -14,12 +14,14 @@ export default function CustomerLayout() {
       ? 'home'
       : segments[segments.length - 1] === 'customer-bookings'
       ? 'orders'
+      : segments[segments.length - 1] === 'customer-terms'
+      ? 'terms'
       : segments[segments.length - 1] === 'customer-profile'
       ? 'profile'
       : '';
 
-  // Only show footer on Home, Orders, and Profile
-  const showFooter = ["home", "orders", "profile"].includes(current);
+  // Only show footer on Home, Orders, Terms, and Profile
+  const showFooter = ["home", "orders", "terms", "profile"].includes(current);
   return (
     <View style={{ flex: 1 }}>
       <Slot />

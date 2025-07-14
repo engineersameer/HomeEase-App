@@ -24,6 +24,7 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/customer', require('./routes/customerRoutes'));
 app.use('/api/provider', require('./routes/providerRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/terms', require('./routes/termsRoutes'));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {

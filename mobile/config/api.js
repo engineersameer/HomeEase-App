@@ -3,10 +3,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Global API Configuration
 export const API_CONFIG = {
   // Change this IP address to your server IP
-  BASE_URL: 'http://192.168.100.5:5000',
+  BASE_URL: 'http://192.168.100.10:5000',
   
   // API Endpoints
   ENDPOINTS: {
+    
     // Auth endpoints
     AUTH_PROFILE: '/api/auth/profile',
     CUSTOMER_SIGNUP: '/api/auth/customer/signup',
@@ -77,6 +78,15 @@ export const API_CONFIG = {
     ADMIN_MAINTENANCE: '/api/admin/maintenance',
     ADMIN_MAINTENANCE_START: '/api/admin/maintenance/:maintenanceId/start',
     ADMIN_MAINTENANCE_COMPLETE: '/api/admin/maintenance/:maintenanceId/complete',
+    
+    // Terms & Conditions endpoints
+    TERMS_ACTIVE: '/api/terms/active',
+    TERMS_ADMIN_ALL: '/api/terms/admin/all',
+    TERMS_ADMIN_USER_TYPE: '/api/terms/admin/user-type/:userType',
+    TERMS_ADMIN_BY_ID: '/api/terms/admin/:id',
+    TERMS_ADMIN_CREATE: '/api/terms/admin',
+    TERMS_ADMIN_UPDATE: '/api/terms/admin/:id',
+    TERMS_ADMIN_DELETE: '/api/terms/admin/:id',
   }
 };
 

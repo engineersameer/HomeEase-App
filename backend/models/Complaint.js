@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const complaintSchema = new mongoose.Schema({
   // Basic Information
-  title: { type: String, required: true },
+  title: { type: String },
   description: { type: String, required: true },
   category: { 
     type: String, 
@@ -16,9 +16,9 @@ const complaintSchema = new mongoose.Schema({
   },
   
   // Parties Involved
-  customer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  customer: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // required: false
   provider: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  booking: { type: mongoose.Schema.Types.ObjectId, ref: 'Booking' },
+  booking: { type: mongoose.Schema.Types.Mixed }, // Allow string or ObjectId
   service: { type: mongoose.Schema.Types.ObjectId, ref: 'Service' },
   
   // Status and Resolution
@@ -69,6 +69,10 @@ const complaintSchema = new mongoose.Schema({
   escalatedTo: { type: String },
   escalationReason: { type: String },
   escalationDate: { type: Date },
+  
+  // Add these fields as optional
+  category: { type: String }, // required: false
+  title: { type: String }, // required: false
   
   // Timestamps
   createdAt: { type: Date, default: Date.now },
