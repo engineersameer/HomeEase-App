@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Global API Configuration
 export const API_CONFIG = {
   // Change this IP address to your server IP
-  BASE_URL: 'http://192.168.100.10:5000',
+  BASE_URL: 'http://192.168.100.5:5000',
   
   // API Endpoints
   ENDPOINTS: {
@@ -95,12 +95,21 @@ export const getApiUrl = (endpoint) => {
   return `${API_CONFIG.BASE_URL}${endpoint}`;
 };
 
-// Helper function to replace URL parameters
+// Helper function to replace URL parameters and append query params
 export const getApiUrlWithParams = (endpoint, params) => {
   let url = endpoint;
+  // Replace any :param in the path
   Object.keys(params).forEach(key => {
     url = url.replace(`:${key}`, params[key]);
   });
+  // Append query params
+  const queryKeys = Object.keys(params).filter(key => !url.includes(params[key]));
+  if (queryKeys.length > 0) {
+    const queryString = queryKeys
+      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
+      .join('&');
+    url += (url.includes('?') ? '&' : '?') + queryString;
+  }
   return `${API_CONFIG.BASE_URL}${url}`;
 };
 

@@ -32,6 +32,9 @@ router.delete('/services/:serviceId', providerController.deleteService);
 // Service categories
 router.get('/service-categories', providerController.getServiceCategories);
 
+// Cities
+router.get('/cities', providerController.getCities);
+
 // Booking management
 router.get('/bookings', providerController.getBookings);
 router.get('/bookings/:bookingId', providerController.getBookingDetails);

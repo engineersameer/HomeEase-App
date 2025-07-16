@@ -9,6 +9,7 @@ router.use(auth);
 // Service search and discovery
 router.get('/services/search', customerController.searchServices);
 router.get('/services/categories', customerController.getCategories);
+router.get('/services/cities', customerController.getCities);
 router.get('/services/:serviceId', customerController.getServiceDetails);
 
 // Booking management

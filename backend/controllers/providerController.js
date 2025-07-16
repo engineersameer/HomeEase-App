@@ -5,8 +5,10 @@ const User = require('../models/User');
 const Review = require('../models/Review');
 const Complaint = require('../models/Complaint');
 const ServiceCategory = require('../models/ServiceCategory');
+const ProviderService = require('../models/Provider-Service');
 const path = require('path');
 const fs = require('fs');
+const City = require('../models/City');
 
 // Get provider dashboard stats
 exports.getDashboard = async (req, res) => {
@@ -49,16 +51,27 @@ exports.createService = async (req, res) => {
       description,
       price,
       location,
+      city,
       availability,
       tags
     } = req.body;
-
+    // Enforce max 2 services per provider
+    const existingCount = await Service.countDocuments({ provider: req.user.id });
+    if (existingCount >= 2) {
+      return res.status(400).json({ success: false, message: 'You have already registered for 2 services. Cannot register more.' });
+    }
+    // Prevent duplicate service (same category and city)
+    const duplicate = await Service.findOne({ provider: req.user.id, category, city });
+    if (duplicate) {
+      return res.status(400).json({ success: false, message: 'You have already registered for this service in this city.' });
+    }
     const service = new Service({
       title,
       category,
       description,
       price,
       location,
+      city,
       provider: req.user.id,
       availability: availability || {
         monday: { available: true, startTime: '09:00', endTime: '17:00' },
@@ -74,11 +87,11 @@ exports.createService = async (req, res) => {
 
     await service.save();
 
-    // Update ServiceCategory with provider ID if not already set
-    await ServiceCategory.findOneAndUpdate(
-      { serviceCategory: category, provider: { $exists: false } },
-      { provider: req.user.id },
-      { new: true }
+    // Create or update provider-service relationship
+    await ProviderService.findOneAndUpdate(
+      { providerId: req.user.id, categoryName: category },
+      { providerId: req.user.id, categoryName: category },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
     res.status(201).json({
@@ -88,7 +101,7 @@ exports.createService = async (req, res) => {
     });
   } catch (error) {
     console.error('Create service error:', error);
-    res.status(500).json({ success: false, message: 'Failed to create service' });
+    res.status(500).json({ success: false, message: error.message || 'Failed to create service' });
   }
 };
 
@@ -378,9 +391,11 @@ exports.sendMessage = async (req, res) => {
 // Get provider's reviews
 exports.getReviews = async (req, res) => {
   try {
-    const reviews = await Review.find({ provider: req.user.id })
-      .populate('customer', 'name')
-      .populate('booking', 'bookingId')
+    // Fetch all services for this provider
+    const services = await Service.find({ provider: req.user.id }, '_id');
+    const serviceIds = services.map(s => s._id);
+    // Fetch reviews for these services
+    const reviews = await Review.find({ service: { $in: serviceIds } })
       .sort({ createdAt: -1 });
 
     res.json({
@@ -496,5 +511,15 @@ exports.getServiceCategories = async (req, res) => {
     res.status(200).json({ success: true, data: categories });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch service categories.', error: error.message });
+  }
+};
+
+// Fetch all cities for providers
+exports.getCities = async (req, res) => {
+  try {
+    const cities = await City.find().sort({ cityName: 1 });
+    res.status(200).json({ success: true, data: cities });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch cities.', error: error.message });
   }
 };

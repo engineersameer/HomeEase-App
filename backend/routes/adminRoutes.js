@@ -415,6 +415,12 @@ router.get('/service-categories', adminController.getServiceCategories);
 router.put('/service-categories/:id', adminController.updateServiceCategory);
 router.delete('/service-categories/:id', adminController.deleteServiceCategory);
 
+// ==================== CITY MANAGEMENT ====================
+router.post('/cities', adminController.createCity);
+router.get('/cities', adminController.getCities);
+router.put('/cities/:id', adminController.updateCity);
+router.delete('/cities/:id', adminController.deleteCity);
+
 // ==================== REPORTS ====================
 
 // Get all saved/generated reports

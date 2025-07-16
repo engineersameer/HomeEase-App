@@ -46,16 +46,15 @@ export default function RegisterService() {
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [categoriesError, setCategoriesError] = useState('');
+  const [cities, setCities] = useState([]);
+  const [citiesLoading, setCitiesLoading] = useState(true);
+  const [citiesError, setCitiesError] = useState('');
   const [providerServices, setProviderServices] = useState([]);
-
-  const cities = [
-    'Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 'Faisalabad',
-    'Multan', 'Peshawar', 'Quetta', 'Sialkot', 'Gujranwala'
-  ];
 
   useEffect(() => {
     loadUserData();
     fetchCategories();
+    fetchCities();
     fetchProviderServices();
   }, []);
 
@@ -82,7 +81,7 @@ export default function RegisterService() {
     try {
       const res = await apiCall(getApiUrl('/api/provider/service-categories'), { method: 'GET' });
       if (res.success) {
-        setCategories(res.data.map(cat => cat.serviceCategory));
+        setCategories(res.data.map(cat => cat.serviceName));
       } else {
         setCategoriesError(res.message || 'Failed to load categories');
       }
@@ -90,6 +89,23 @@ export default function RegisterService() {
       setCategoriesError('Failed to load categories');
     } finally {
       setCategoriesLoading(false);
+    }
+  };
+
+  const fetchCities = async () => {
+    setCitiesLoading(true);
+    setCitiesError('');
+    try {
+      const res = await apiCall(getApiUrl('/api/provider/cities'), { method: 'GET' });
+      if (res.success) {
+        setCities(res.data.map(city => city.cityName));
+      } else {
+        setCitiesError(res.message || 'Failed to load cities');
+      }
+    } catch (err) {
+      setCitiesError('Failed to load cities');
+    } finally {
+      setCitiesLoading(false);
     }
   };
 
@@ -130,7 +146,7 @@ export default function RegisterService() {
       return;
     }
     if (!serviceData.title.trim() || !serviceData.category || !serviceData.description.trim() || !serviceData.price || !serviceData.location) {
-      Alert.alert('Error', 'Please fill in all required fields');
+      Alert.alert('Error', 'Please fill in all required fields, including city and category.');
       return;
     }
 
@@ -144,22 +160,27 @@ export default function RegisterService() {
       const servicePayload = {
         ...serviceData,
         price: parseFloat(serviceData.price),
-        providerId: user._id
+        providerId: user._id,
+        city: serviceData.location, // Always set city
+        location: serviceData.location // Always set location
       };
 
-      await apiCall(getApiUrl(API_CONFIG.ENDPOINTS.PROVIDER_SERVICE_CREATE), {
+      const res = await apiCall(getApiUrl(API_CONFIG.ENDPOINTS.PROVIDER_SERVICE_CREATE), {
         method: 'POST',
         body: JSON.stringify(servicePayload)
       });
 
-      Alert.alert('Success', 'Service created successfully!', [
-        {
-          text: 'OK',
-          onPress: () => router.push('/provider/your-services')
-        }
-      ]);
-      // Refresh provider services after creation
-      fetchProviderServices();
+      if (res.success) {
+        Alert.alert('Success', 'Service created successfully!', [
+          {
+            text: 'OK',
+            onPress: () => router.push('/provider/your-services')
+          }
+        ]);
+        fetchProviderServices();
+      } else {
+        Alert.alert('Error', res.message || 'Failed to create service. Please try again.');
+      }
     } catch (error) {
       Alert.alert('Error', 'Failed to create service. Please try again.');
     } finally {
@@ -256,7 +277,7 @@ export default function RegisterService() {
             ) : categories.length === 0 ? (
               <Text style={{ color: theme.textLight, marginVertical: 8 }}>No service categories found.</Text>
             ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 0 }}>
                 {categories.map((category) => (
                   <TouchableOpacity
                     key={category}
@@ -337,7 +358,14 @@ export default function RegisterService() {
             <Text style={{ fontSize: 14, fontWeight: '600', color: theme.textDark, fontFamily: Fonts.subheading, marginBottom: 8 }}>
               Service Location *
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+            {citiesLoading ? (
+              <ActivityIndicator size="small" color={theme.primary} style={{ marginVertical: 8 }} />
+            ) : citiesError ? (
+              <Text style={{ color: '#EF4444', marginVertical: 8 }}>{citiesError}</Text>
+            ) : cities.length === 0 ? (
+              <Text style={{ color: theme.textLight, marginVertical: 8 }}>No cities found.</Text>
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 0 }}>
               {cities.map((city) => (
                 <TouchableOpacity
                   key={city}
@@ -362,6 +390,7 @@ export default function RegisterService() {
                 </TouchableOpacity>
               ))}
             </ScrollView>
+            )}
           </View>
         </View>
 

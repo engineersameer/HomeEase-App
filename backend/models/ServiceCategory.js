@@ -1,16 +1,15 @@
 const mongoose = require('mongoose');
 
 const ServiceCategorySchema = new mongoose.Schema({
-  serviceCategory: {
+  serviceId: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: () => new mongoose.Types.ObjectId(),
+    unique: true
+  },
+  serviceName: {
     type: String,
     required: true,
-    unique: true,
     trim: true
-  },
-  provider: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: false
   }
 }, {
   timestamps: true

@@ -27,10 +27,15 @@ const serviceSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
+  city: {
+    type: String,
+    required: true,
+    trim: true
+  },
   location: {
     type: String,
     required: true,
-    enum: ['Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 'Faisalabad', 'Multan', 'Peshawar', 'Quetta', 'Sialkot', 'Gujranwala']
+    trim: true
   },
   provider: {
     type: mongoose.Schema.Types.ObjectId,
@@ -90,6 +95,16 @@ serviceSchema.index({ title: 'text', description: 'text', category: 'text', loca
 serviceSchema.virtual('averageRating').get(function() {
   return this.reviewCount > 0 ? this.rating / this.reviewCount : 0;
 });
+
+// Virtual for reviews
+serviceSchema.virtual('reviews', {
+  ref: 'Review',
+  localField: '_id',
+  foreignField: 'service',
+});
+
+serviceSchema.set('toObject', { virtuals: true });
+serviceSchema.set('toJSON', { virtuals: true });
 
 // Method to update rating
 serviceSchema.methods.updateRating = function(newRating) {

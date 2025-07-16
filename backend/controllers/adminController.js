@@ -8,6 +8,7 @@ const Content = require('../models/Content');
 const Maintenance = require('../models/Maintenance');
 const PDFDocument = require('pdfkit');
 const ServiceCategory = require('../models/ServiceCategory');
+const City = require('../models/City');
 
 // Admin Profile Management
 const updateAdminProfile = async (req, res) => {
@@ -754,19 +755,20 @@ const completeMaintenance = async (req, res) => {
 // Service Category Management
 const createServiceCategory = async (req, res) => {
   try {
-    const { serviceCategory } = req.body;
-    if (!serviceCategory) {
-      return res.status(400).json({ success: false, message: 'Service category is required.' });
+    const { serviceName } = req.body;
+    if (!serviceName) {
+      return res.status(400).json({ success: false, message: 'Service name is required.' });
     }
-    const existing = await ServiceCategory.findOne({ serviceCategory });
+    const existing = await ServiceCategory.findOne({ serviceName });
     if (existing) {
-      return res.status(409).json({ success: false, message: 'Service category already exists.' });
+      return res.status(409).json({ success: false, message: 'Service category with this name already exists.' });
     }
-    const newCategory = new ServiceCategory({ serviceCategory });
+    const newCategory = new ServiceCategory({ serviceName });
     await newCategory.save();
     res.status(201).json({ success: true, data: newCategory });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to create service category.', error: error.message });
+    console.error('Error in createServiceCategory:', error);
+    res.status(500).json({ success: false, message: `Failed to create service category: ${error.message}`, error: error });
   }
 };
 
@@ -782,13 +784,13 @@ const getServiceCategories = async (req, res) => {
 const updateServiceCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const { serviceCategory } = req.body;
-    if (!serviceCategory) {
-      return res.status(400).json({ success: false, message: 'Service category is required.' });
+    const { serviceName } = req.body;
+    if (!serviceName) {
+      return res.status(400).json({ success: false, message: 'Service name is required.' });
     }
     const updated = await ServiceCategory.findByIdAndUpdate(
       id,
-      { serviceCategory },
+      { serviceName },
       { new: true, runValidators: true }
     );
     if (!updated) {
@@ -810,6 +812,69 @@ const deleteServiceCategory = async (req, res) => {
     res.status(200).json({ success: true, message: 'Service category deleted.' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to delete service category.', error: error.message });
+  }
+};
+
+// City Management
+const createCity = async (req, res) => {
+  try {
+    const { cityName } = req.body;
+    if (!cityName || !cityName.trim()) {
+      return res.status(400).json({ success: false, message: 'City name is required.' });
+    }
+    const existing = await City.findOne({ cityName: cityName.trim() });
+    if (existing) {
+      return res.status(409).json({ success: false, message: 'City already exists.' });
+    }
+    const city = new City({ cityName: cityName.trim() });
+    await city.save();
+    res.status(201).json({ success: true, data: city });
+  } catch (error) {
+    console.error('Error in createCity:', error);
+    res.status(500).json({ success: false, message: `Failed to create city: ${error.message}` });
+  }
+};
+
+const getCities = async (req, res) => {
+  try {
+    const cities = await City.find().sort({ cityName: 1 });
+    res.status(200).json({ success: true, data: cities });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch cities.', error: error.message });
+  }
+};
+
+const updateCity = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { cityName } = req.body;
+    if (!cityName || !cityName.trim()) {
+      return res.status(400).json({ success: false, message: 'City name is required.' });
+    }
+    const existing = await City.findOne({ cityName: cityName.trim(), _id: { $ne: id } });
+    if (existing) {
+      return res.status(409).json({ success: false, message: 'City with this name already exists.' });
+    }
+    const updated = await City.findByIdAndUpdate(id, { cityName: cityName.trim() }, { new: true, runValidators: true });
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'City not found.' });
+    }
+    res.status(200).json({ success: true, data: updated });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update city.', error: error.message });
+  }
+};
+
+const deleteCity = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = await City.findByIdAndDelete(id);
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'City not found.' });
+    }
+    res.status(200).json({ success: true, message: 'City deleted.' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to delete city.', error: error.message });
   }
 };
 
@@ -858,5 +923,11 @@ module.exports = {
   createServiceCategory,
   getServiceCategories,
   updateServiceCategory,
-  deleteServiceCategory
+  deleteServiceCategory,
+
+  // City Management
+  createCity,
+  getCities,
+  updateCity,
+  deleteCity
 }; 

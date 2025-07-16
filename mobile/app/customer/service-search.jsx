@@ -32,17 +32,19 @@ export default function ServiceSearch() {
   const [selectedLocation, setSelectedLocation] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loadingCities, setLoadingCities] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
 
-  const cities = [
-    'Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 'Faisalabad',
-    'Multan', 'Peshawar', 'Quetta', 'Sialkot', 'Gujranwala'
-  ];
+  // Only show search results after a search has been performed
+  const [hasSearched, setHasSearched] = useState(false);
 
   useEffect(() => {
     loadUserData();
     fetchCategories();
-    searchServices();
+    fetchCities();
+    // searchServices(); // Remove this to prevent default search
   }, []);
 
   const loadUserData = async () => {
@@ -58,14 +60,20 @@ export default function ServiceSearch() {
 
   const searchServices = async () => {
     setLoading(true);
+    setHasSearched(true);
     try {
       const params = {};
       if (searchQuery.trim()) params.query = searchQuery;
-      if (selectedCategory) params.category = selectedCategory;
-      if (selectedLocation) params.location = selectedLocation;
+      if (selectedCategory && selectedCategory !== '' && selectedCategory !== 'All') params.category = selectedCategory;
+      if (selectedLocation && selectedLocation !== '' && selectedLocation !== 'All') params.city = selectedLocation;
 
       const url = getApiUrlWithParams(API_CONFIG.ENDPOINTS.CUSTOMER_SERVICE_SEARCH, params);
-      const data = await apiCall(url);
+      console.log('Selected category:', selectedCategory);
+      console.log('Selected city:', selectedLocation);
+      console.log('Service search params:', params);
+      console.log('Service search URL:', url);
+      // Always use GET, never pass a body or method override
+      const data = await apiCall(url); 
       setSearchResults(data.services || []);
     } catch (error) {
       Alert.alert('Error', 'Failed to search services');
@@ -75,11 +83,36 @@ export default function ServiceSearch() {
   };
 
   const fetchCategories = async () => {
+    setLoadingCategories(true);
     try {
       const data = await apiCall(getApiUrl(API_CONFIG.ENDPOINTS.CUSTOMER_CATEGORIES));
       setCategories(data.categories || []);
     } catch (error) {
       console.log('Error fetching categories:', error);
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  const fetchCities = async () => {
+    setLoadingCities(true);
+    try {
+      const data = await apiCall(getApiUrl('/api/customer/services/cities'));
+      console.log('Fetched cities:', data); // Debug log
+      // Support both array of strings and array of objects
+      let cityList = [];
+      if (Array.isArray(data.cities)) {
+        if (typeof data.cities[0] === 'string') {
+          cityList = data.cities;
+        } else if (typeof data.cities[0] === 'object' && data.cities[0] !== null) {
+          cityList = data.cities.map(city => city.cityName || city.name || '');
+        }
+      }
+      setCities(cityList.filter(Boolean));
+    } catch (error) {
+      console.log('Error fetching cities:', error);
+    } finally {
+      setLoadingCities(false);
     }
   };
 
@@ -87,7 +120,8 @@ export default function ServiceSearch() {
     setRefreshing(true);
     await Promise.all([
       searchServices(),
-      fetchCategories()
+      fetchCategories(),
+      fetchCities()
     ]);
     setRefreshing(false);
   };
@@ -121,6 +155,8 @@ export default function ServiceSearch() {
   const formatCurrency = (amount) => {
     return `PKR ${amount.toLocaleString()}`;
   };
+
+  const canApplyFilters = selectedCategory && selectedLocation;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
@@ -221,32 +257,13 @@ export default function ServiceSearch() {
             <Text style={{ fontSize: 14, fontWeight: '600', color: theme.textDark, fontFamily: Fonts.subheading, marginBottom: 8 }}>
               Category
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <TouchableOpacity
-                style={{
-                  backgroundColor: !selectedCategory ? theme.primary : theme.card,
-                  paddingHorizontal: 16,
-                  paddingVertical: 8,
-                  borderRadius: 20,
-                  marginRight: 8,
-                  borderWidth: 1,
-                  borderColor: theme.border
-                }}
-                onPress={() => setSelectedCategory('')}
-              >
-                <Text style={{
-                  color: !selectedCategory ? '#fff' : theme.textDark,
-                  fontFamily: Fonts.body,
-                  fontSize: 12
-                }}>
-                  All
-                </Text>
-              </TouchableOpacity>
-              {categories.map((category) => (
+            {loadingCategories ? (
+              <ActivityIndicator size="small" color={theme.primary} />
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <TouchableOpacity
-                  key={category}
                   style={{
-                    backgroundColor: selectedCategory === category ? theme.primary : theme.card,
+                    backgroundColor: !selectedCategory || selectedCategory === 'All' ? theme.primary : theme.card,
                     paddingHorizontal: 16,
                     paddingVertical: 8,
                     borderRadius: 20,
@@ -254,18 +271,41 @@ export default function ServiceSearch() {
                     borderWidth: 1,
                     borderColor: theme.border
                   }}
-                  onPress={() => setSelectedCategory(category)}
+                  onPress={() => setSelectedCategory('All')}
                 >
                   <Text style={{
-                    color: selectedCategory === category ? '#fff' : theme.textDark,
+                    color: !selectedCategory || selectedCategory === 'All' ? '#fff' : theme.textDark,
                     fontFamily: Fonts.body,
                     fontSize: 12
                   }}>
-                    {category}
+                    All
                   </Text>
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
+                {categories.map((category) => (
+                  <TouchableOpacity
+                    key={category}
+                    style={{
+                      backgroundColor: selectedCategory === category ? theme.primary : theme.card,
+                      paddingHorizontal: 16,
+                      paddingVertical: 8,
+                      borderRadius: 20,
+                      marginRight: 8,
+                      borderWidth: 1,
+                      borderColor: theme.border
+                    }}
+                    onPress={() => setSelectedCategory(category)}
+                  >
+                    <Text style={{
+                      color: selectedCategory === category ? '#fff' : theme.textDark,
+                      fontFamily: Fonts.body,
+                      fontSize: 12
+                    }}>
+                      {category}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
           </View>
 
           {/* Location */}
@@ -273,32 +313,19 @@ export default function ServiceSearch() {
             <Text style={{ fontSize: 14, fontWeight: '600', color: theme.textDark, fontFamily: Fonts.subheading, marginBottom: 8 }}>
               Location
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <TouchableOpacity
-                style={{
-                  backgroundColor: !selectedLocation ? theme.primary : theme.card,
-                  paddingHorizontal: 16,
-                  paddingVertical: 8,
-                  borderRadius: 20,
-                  marginRight: 8,
-                  borderWidth: 1,
-                  borderColor: theme.border
-                }}
-                onPress={() => setSelectedLocation('')}
-              >
-                <Text style={{
-                  color: !selectedLocation ? '#fff' : theme.textDark,
-                  fontFamily: Fonts.body,
-                  fontSize: 12
-                }}>
-                  All Locations
-                </Text>
-              </TouchableOpacity>
-              {cities.map((city) => (
+            {loadingCities ? (
+              <ActivityIndicator size="small" color={theme.primary} />
+            ) : cities.length === 0 ? (
+              <Text style={{ color: theme.textLight, fontFamily: Fonts.body, fontSize: 13, paddingVertical: 8 }}>
+                No cities found. Please check back later.
+              </Text>
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {/* 'All' option at the top */}
                 <TouchableOpacity
-                  key={city}
+                  key="all-locations"
                   style={{
-                    backgroundColor: selectedLocation === city ? theme.primary : theme.card,
+                    backgroundColor: selectedLocation === '' || selectedLocation === 'All' ? theme.primary : theme.card,
                     paddingHorizontal: 16,
                     paddingVertical: 8,
                     borderRadius: 20,
@@ -306,18 +333,41 @@ export default function ServiceSearch() {
                     borderWidth: 1,
                     borderColor: theme.border
                   }}
-                  onPress={() => setSelectedLocation(city)}
+                  onPress={() => setSelectedLocation('')}
                 >
                   <Text style={{
-                    color: selectedLocation === city ? '#fff' : theme.textDark,
+                    color: selectedLocation === '' || selectedLocation === 'All' ? '#fff' : theme.textDark,
                     fontFamily: Fonts.body,
                     fontSize: 12
                   }}>
-                    {city}
+                    All
                   </Text>
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
+                {cities.map((city, idx) => (
+                  <TouchableOpacity
+                    key={city + idx}
+                    style={{
+                      backgroundColor: selectedLocation === city ? theme.primary : theme.card,
+                      paddingHorizontal: 16,
+                      paddingVertical: 8,
+                      borderRadius: 20,
+                      marginRight: 8,
+                      borderWidth: 1,
+                      borderColor: theme.border
+                    }}
+                    onPress={() => setSelectedLocation(city)}
+                  >
+                    <Text style={{
+                      color: selectedLocation === city ? '#fff' : theme.textDark,
+                      fontFamily: Fonts.body,
+                      fontSize: 12
+                    }}>
+                      {city}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
           </View>
 
           {/* Filter Actions */}
@@ -325,12 +375,14 @@ export default function ServiceSearch() {
             <TouchableOpacity
               style={{
                 flex: 1,
-                backgroundColor: theme.primary,
+                backgroundColor: canApplyFilters ? theme.primary : theme.card,
                 paddingVertical: 10,
                 borderRadius: 8,
-                alignItems: 'center'
+                alignItems: 'center',
+                opacity: canApplyFilters ? 1 : 0.5
               }}
-              onPress={searchServices}
+              onPress={canApplyFilters ? searchServices : undefined}
+              disabled={!canApplyFilters}
             >
               <Text style={{ color: '#fff', fontWeight: 'bold', fontFamily: Fonts.body }}>
                 Apply Filters
@@ -371,16 +423,20 @@ export default function ServiceSearch() {
               Searching for services...
             </Text>
           </View>
+        ) : !hasSearched ? (
+          <View style={{ alignItems: 'center', marginTop: 40 }}>
+            <Ionicons name="search-outline" size={48} color={theme.textLight} />
+            <Text style={{ color: theme.textLight, fontFamily: Fonts.body, marginTop: 12, textAlign: 'center' }}>
+              Search for services to get started.
+            </Text>
+          </View>
         ) : searchResults.length === 0 ? (
           <View style={{ alignItems: 'center', marginTop: 40 }}>
             <Ionicons name="search-outline" size={48} color={theme.textLight} />
             <Text style={{ color: theme.textLight, fontFamily: Fonts.body, marginTop: 12, textAlign: 'center' }}>
-              {searchQuery || selectedCategory || selectedLocation 
-                ? 'No services found matching your criteria.'
-                : 'Search for services to get started.'
-              }
+              No services found for this category and location.
             </Text>
-            {searchQuery || selectedCategory || selectedLocation ? (
+            {(searchQuery || selectedCategory || selectedLocation) ? (
               <TouchableOpacity
                 style={{
                   backgroundColor: theme.primary,

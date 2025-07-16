@@ -5,6 +5,8 @@ const Review = require('../models/Review');
 const Chat = require('../models/Chat');
 const Notification = require('../models/Notification');
 const SupportRequest = require('../models/SupportRequest');
+const ServiceCategory = require('../models/ServiceCategory');
+const City = require('../models/City');
 
 // Get customer dashboard
 exports.getCustomerDashboard = async (req, res) => {
@@ -78,42 +80,20 @@ exports.updateCustomerProfile = async (req, res) => {
 // Search for services
 exports.searchServices = async (req, res) => {
   try {
-    const { query, category, location, limit = 20, page = 1 } = req.query;
-    
-    let searchCriteria = { isActive: true };
-    
-    // Add search filters
-    if (query) {
-      searchCriteria.$text = { $search: query };
+    console.log('Full request URL:', req.originalUrl);
+    console.log('req.query:', req.query);
+    const filters = { isActive: true };
+    if (req.query.category && req.query.category !== 'All') {
+      filters.category = { $regex: `^${req.query.category.trim()}$`, $options: 'i' };
     }
-    
-    if (category) {
-      searchCriteria.category = category;
+    if (req.query.city && req.query.city !== 'All') {
+      filters.city = { $regex: `^${req.query.city.trim()}$`, $options: 'i' };
     }
-    
-    if (location) {
-      searchCriteria.location = location;
-    }
-
-    const skip = (page - 1) * limit;
-    
-    const services = await Service.find(searchCriteria)
-      .populate('provider', 'name email phone rating reviewCount')
-      .sort({ rating: -1, reviewCount: -1 })
-      .limit(parseInt(limit))
-      .skip(skip);
-
-    const total = await Service.countDocuments(searchCriteria);
-
-    res.json({
-      success: true,
-      services,
-      pagination: {
-        current: parseInt(page),
-        total: Math.ceil(total / limit),
-        hasMore: skip + services.length < total
-      }
-    });
+    console.log('Received filters:', req.query);
+    console.log('MongoDB filters:', filters);
+    const services = await Service.find(filters);
+    console.log('Returned services:', services.map(s => ({ category: s.category, city: s.city })));
+    res.status(200).json({ success: true, services });
   } catch (error) {
     console.error('Search services error:', error);
     res.status(500).json({ success: false, message: 'Failed to search services' });
@@ -129,7 +109,7 @@ exports.getServiceDetails = async (req, res) => {
       .populate('provider', 'name email phone rating reviewCount address')
       .populate({
         path: 'reviews',
-        populate: { path: 'customer', select: 'name' }
+        // No nested populate for customer, as Review model is simplified
       });
 
     if (!service) {
@@ -149,18 +129,28 @@ exports.getServiceDetails = async (req, res) => {
 // Get service categories
 exports.getCategories = async (req, res) => {
   try {
-    const categories = [
-      'Electrical', 'Plumbing', 'Cleaning', 'Carpentry', 'Painting',
-      'Gardening', 'Moving', 'Repair', 'Installation', 'Maintenance', 'Other'
-    ];
-
+    const categories = await ServiceCategory.find().sort({ createdAt: -1 });
     res.json({
       success: true,
-      categories
+      categories: categories.map(cat => cat.serviceName)
     });
   } catch (error) {
     console.error('Get categories error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch categories' });
+  }
+};
+
+// Get cities for customer
+exports.getCities = async (req, res) => {
+  try {
+    const cities = await City.find().sort({ cityName: 1 });
+    res.json({
+      success: true,
+      cities: cities.map(city => city.cityName)
+    });
+  } catch (error) {
+    console.error('Get cities error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch cities' });
   }
 };
 
@@ -383,43 +373,25 @@ exports.sendMessage = async (req, res) => {
 // Create a review
 exports.createReview = async (req, res) => {
   try {
-    const { bookingId, rating, comment, providerId } = req.body;
+    const { serviceId, rating, reviewText } = req.body;
 
-    // Validate booking exists and belongs to customer
-    const booking = await Booking.findOne({
-      _id: bookingId,
-      customerId: req.user.id,
-      status: 'completed'
-    });
-
-    if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found or not completed' });
-    }
-
-    // Check if review already exists
-    const existingReview = await Review.findOne({
-      booking: bookingId,
-      customer: req.user.id
-    });
-
-    if (existingReview) {
-      return res.status(400).json({ success: false, message: 'Review already exists for this booking' });
+    // Validate service exists
+    const service = await Service.findById(serviceId);
+    if (!service) {
+      return res.status(404).json({ success: false, message: 'Service not found' });
     }
 
     // Create review
     const review = new Review({
-      booking: bookingId,
-      customer: req.user.id,
-      provider: providerId,
+      service: serviceId,
       rating,
-      comment
+      reviewText
     });
 
     await review.save();
 
-    // Update service rating
-    const service = await Service.findById(booking.serviceId);
-    if (service) {
+    // Optionally update service rating if needed
+    if (service && rating) {
       await service.updateRating(rating);
     }
 
