@@ -157,46 +157,88 @@ exports.getCities = async (req, res) => {
 // Create a booking
 exports.createBooking = async (req, res) => {
   try {
+    console.log('--- [Booking] Incoming request ---');
+    console.log('Headers:', req.headers);
+    console.log('Body:', req.body);
     const {
       serviceId,
-      providerId,
-      date,
-      time,
-      address,
-      description,
-      estimatedCost
+      customerContact,
+      email,
+      bookingDate,
+      preferredTime,
+      specialNote,
+      location
     } = req.body;
+
+    // Log all received fields
+    console.log('[Booking] Received fields:', {
+      serviceId,
+      customerContact,
+      email,
+      bookingDate,
+      preferredTime,
+      specialNote,
+      location
+    });
+
+    // Validate required fields
+    let missingFields = [];
+    if (!serviceId) missingFields.push('serviceId');
+    if (!customerContact) missingFields.push('customerContact');
+    if (!email) missingFields.push('email');
+    if (!bookingDate) missingFields.push('bookingDate');
+    if (!preferredTime) missingFields.push('preferredTime');
+    if (!location) missingFields.push('location');
+    if (missingFields.length > 0) {
+      console.log('[Booking] Validation failed. Missing fields:', missingFields);
+      return res.status(400).json({ success: false, message: 'Missing required fields', missingFields });
+    }
 
     // Validate service exists and is active
     const service = await Service.findById(serviceId);
     if (!service || !service.isActive) {
+      console.log('[Booking] Service not available:', serviceId);
       return res.status(404).json({ success: false, message: 'Service not available' });
     }
 
-    // Create booking
+    // Prevent duplicate booking for the same customer and service
+    const existingBooking = await Booking.findOne({ customerId: req.user.id, serviceId });
+    if (existingBooking) {
+      return res.status(400).json({ success: false, message: 'You have already booked this service.' });
+    }
+
+    // Create booking with status 'neutral'
+    console.log('[Booking] Creating booking document...');
     const booking = new Booking({
       customerId: req.user.id,
-      providerId,
+      customerContact,
+      email,
+      bookingDate: new Date(bookingDate),
+      preferredTime,
+      specialNote,
+      location,
       serviceId,
-      date: new Date(date + ' ' + time),
-      description,
-      estimatedCost: estimatedCost || service.price,
-      status: 'pending'
+      status: 'neutral'
     });
 
-    await booking.save();
-
-    // Create or get chat between customer and provider
-    await Chat.findOrCreateChat(req.user.id, providerId, booking._id, serviceId);
-
-    res.status(201).json({
-      success: true,
-      message: 'Booking created successfully',
-      booking
-    });
+    try {
+      const savedBooking = await booking.save();
+      // After confirmation, update status to 'pending'
+      savedBooking.status = 'pending';
+      await savedBooking.save();
+      console.log('[Booking] Booking saved successfully:', savedBooking._id);
+      res.status(201).json({
+        success: true,
+        message: 'Booking created successfully',
+        booking: savedBooking
+      });
+    } catch (err) {
+      console.error('[Booking] Booking save failed:', err);
+      return res.status(500).json({ success: false, message: 'Failed to save booking', error: err.message });
+    }
   } catch (error) {
-    console.error('Create booking error:', error);
-    res.status(500).json({ success: false, message: 'Failed to create booking' });
+    console.error('[Booking] Create booking error:', error);
+    res.status(500).json({ success: false, message: 'Failed to create booking', error: error.message });
   }
 };
 
@@ -204,23 +246,25 @@ exports.createBooking = async (req, res) => {
 exports.getBookings = async (req, res) => {
   try {
     const { status, limit = 10, page = 1 } = req.query;
-    
     let query = { customerId: req.user.id };
-    if (status) {
-      query.status = status;
+    if (status && status !== 'all') {
+      if (status === 'in-progress') {
+        query.status = { $in: ['in-progress', 'inProgress'] };
+      } else {
+        query.status = status;
+      }
     }
-
     const skip = (page - 1) * limit;
-    
     const bookings = await Booking.find(query)
-      .populate('providerId', 'name email phone')
-      .populate('serviceId', 'title category price')
+      .populate({
+        path: 'serviceId',
+        select: 'title category price provider',
+        populate: { path: 'provider', select: 'name email phone profileImage image' }
+      })
       .sort({ createdAt: -1 })
       .limit(parseInt(limit))
       .skip(skip);
-
     const total = await Booking.countDocuments(query);
-
     res.json({
       success: true,
       bookings,
@@ -289,6 +333,26 @@ exports.cancelBooking = async (req, res) => {
   } catch (error) {
     console.error('Cancel booking error:', error);
     res.status(500).json({ success: false, message: 'Failed to cancel booking' });
+  }
+};
+
+// Delete a booking (customer can cancel/delete their own booking)
+exports.deleteBooking = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    // Only allow deletion if the booking belongs to the logged-in customer
+    const booking = await Booking.findOne({ _id: bookingId, customerId: req.user.id });
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found or not authorized.' });
+    }
+    if (booking.status === 'cancelled') {
+      return res.status(400).json({ success: false, message: 'Booking is already cancelled.' });
+    }
+    await Booking.deleteOne({ _id: bookingId });
+    res.json({ success: true, message: 'Booking cancelled and deleted successfully.' });
+  } catch (error) {
+    console.error('Delete booking error:', error);
+    res.status(500).json({ success: false, message: 'Failed to cancel booking.' });
   }
 };
 

@@ -19,7 +19,6 @@ import { Colors, Fonts } from '../../Color/Color';
 import { getApiUrlWithParams, apiCall, API_CONFIG } from '../../config/api';
 import Button from './shared/Button';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 
 const TIME_SLOTS = [
@@ -47,19 +46,11 @@ export default function ServiceBooking() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
-  const [showMapModal, setShowMapModal] = useState(false);
   const [focusAnim] = useState(new Animated.Value(1));
-  const [mapRegion, setMapRegion] = useState({
-    latitude: 24.8607,
-    longitude: 67.0011,
-    latitudeDelta: 0.01,
-    longitudeDelta: 0.01,
-  });
-  const [mapPin, setMapPin] = useState(null);
-  const [mapLoading, setMapLoading] = useState(false);
   const [pageAnim] = useState(new Animated.Value(0));
 
   useEffect(() => {
+    console.log('Current platform:', Platform.OS);
     loadThemePreference();
       fetchServiceDetails();
     fetchUserProfile();
@@ -105,7 +96,12 @@ export default function ServiceBooking() {
   const validate = () => {
     if (!fullName.trim()) return 'Full Name is required.';
     if (!phone.trim()) return 'Phone Number is required.';
+    if (!/^[+]?\d{10,15}$/.test(phone.trim())) return 'Invalid phone number format.';
+    if (!email.trim()) return 'Email is required.';
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return 'Invalid email format.';
     if (!preferredDate.trim()) return 'Preferred Date is required.';
+    // Validate date format (YYYY-MM-DD)
+    if (isNaN(Date.parse(preferredDate))) return 'Preferred Date must be a valid date.';
     if (!preferredTime.trim()) return 'Preferred Time is required.';
     if (!location.trim()) return 'Location is required.';
     return '';
@@ -129,69 +125,55 @@ export default function ServiceBooking() {
     }
     setSubmitting(true);
     setError('');
+    setSuccess(false);
     try {
-      await apiCall(API_CONFIG.ENDPOINTS.CUSTOMER_BOOKINGS, {
+      // Ensure all required fields are sent and bookingDate is ISO string
+      const response = await apiCall(getApiUrlWithParams(API_CONFIG.ENDPOINTS.CUSTOMER_BOOKINGS, { serviceId: params.serviceId }), {
         method: 'POST',
         body: JSON.stringify({
           serviceId: params.serviceId,
-          fullName: fullName.trim(),
-          phone: phone.trim(),
+          customerContact: phone.trim(),
           email: email.trim(),
-          date: preferredDate,
-          time: preferredTime,
-          notes: notes.trim(),
+          bookingDate: new Date(preferredDate).toISOString(),
+          preferredTime: preferredTime,
+          specialNote: notes.trim(),
           location: location.trim(),
         })
       });
+      if (!response || typeof response !== 'object') {
+        setError('Unexpected error: No response from server.');
+        setSubmitting(false);
+        return;
+      }
+      if (!response.success) {
+        // Show a clear alert for duplicate booking
+        if (response.message === 'You have already booked this service.') {
+          setError('You have already booked this service.');
+          return;
+        }
+        setError(response.message || 'Failed to create booking. Please try again.');
+        setSubmitting(false);
+        return;
+      }
       setSuccess(true);
+      setError('');
+      // Reset all form fields
+      setFullName('');
+      setPhone('');
+      setEmail('');
+      setPreferredDate('');
+      setPreferredTime('');
+      setNotes('');
+      setLocation('');
+      // Redirect to bookings page after a short delay for UX
       setTimeout(() => {
         router.push('/customer/customer-bookings');
-      }, 1500);
-    } catch {
+      }, 800);
+    } catch (err) {
       setError('Failed to create booking. Please try again.');
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handleMapPress = async (e) => {
-    const { latitude, longitude } = e.nativeEvent.coordinate;
-    setMapPin({ latitude, longitude });
-    setMapLoading(true);
-    try {
-      let [place] = await Location.reverseGeocodeAsync({ latitude, longitude });
-      let address = [place.name, place.street, place.city, place.region, place.country].filter(Boolean).join(', ');
-      setLocation(address);
-    } catch {
-      setLocation(`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
-    }
-    setMapLoading(false);
-  };
-
-  const handleUseMyLocation = async () => {
-    setMapLoading(true);
-    let { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      setMapLoading(false);
-      Alert.alert('Permission Denied', 'Location permission is required to use map.');
-      return;
-    }
-    let loc = await Location.getCurrentPositionAsync({});
-    setMapRegion({
-      ...mapRegion,
-      latitude: loc.coords.latitude,
-      longitude: loc.coords.longitude,
-    });
-    setMapPin({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
-    try {
-      let [place] = await Location.reverseGeocodeAsync(loc.coords);
-      let address = [place.name, place.street, place.city, place.region, place.country].filter(Boolean).join(', ');
-      setLocation(address);
-    } catch {
-      setLocation(`${loc.coords.latitude.toFixed(5)}, ${loc.coords.longitude.toFixed(5)}`);
-    }
-    setMapLoading(false);
-    setShowMapModal(true);
   };
 
   const handleFocus = () => {
@@ -383,7 +365,6 @@ export default function ServiceBooking() {
 
           {/* Location Section */}
           <Text style={sectionTitle(theme)}>Location</Text>
-          <Text style={{ color: theme.textLight, fontFamily: Fonts.body, marginBottom: 6, fontSize: 15 }}>Enter your address or select on map</Text>
           <View style={{ marginBottom: 10 }}>
             <TextInput
               style={[
@@ -406,13 +387,6 @@ export default function ServiceBooking() {
               multiline
               numberOfLines={5}
             />
-            <Button
-              title="📍 Select on Map"
-              onPress={handleUseMyLocation}
-              variant="card"
-              style={{ marginTop: 10, width: '100%', paddingVertical: 14 }}
-              textStyle={{ color: theme.primary, fontSize: 15 }}
-            />
           </View>
 
           {/* Confirm Button */}
@@ -425,38 +399,16 @@ export default function ServiceBooking() {
           />
           {success && (
             <Text style={{ color: theme.primary, marginTop: 16, fontWeight: 'bold', fontFamily: Fonts.body }}>
-              Booking Confirmed! Redirecting...
+              Booking has been done
+            </Text>
+          )}
+          {error && (
+            <Text style={{ color: '#EF4444', marginTop: 16, fontWeight: 'bold', fontFamily: Fonts.body }}>
+              {error}
             </Text>
           )}
         </Animated.View>
       </ScrollView>
-
-      {/* Map Modal with real map */}
-      <Modal
-        visible={showMapModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowMapModal(false)}
-      >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'center', alignItems: 'center' }}>
-          <Animated.View style={{ width: '95%', backgroundColor: theme.card, borderRadius: 18, padding: 18, alignItems: 'center', shadowColor: theme.textDark, shadowOpacity: 0.15, shadowRadius: 10, elevation: 4, opacity: pageAnim, transform: [{ scale: pageAnim }] }}>
-            <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.primary, marginBottom: 12 }}>Select Location</Text>
-            <View style={{ width: '100%', height: 240, backgroundColor: theme.background, borderRadius: 12, overflow: 'hidden', marginBottom: 18, borderWidth: 1, borderColor: theme.border }}>
-              <MapView
-                style={{ flex: 1 }}
-                region={mapRegion}
-                onPress={handleMapPress}
-              >
-                {mapPin && <Marker coordinate={mapPin} />}
-              </MapView>
-              {mapLoading && <ActivityIndicator style={{ position: 'absolute', top: 10, right: 10 }} color={theme.primary} />}
-            </View>
-            <Text style={{ color: theme.textDark, marginBottom: 8, fontFamily: Fonts.body, fontSize: 15, textAlign: 'center' }}>{location || 'Tap on map to select address'}</Text>
-            <Button title="Use This Location" onPress={() => setShowMapModal(false)} style={{ width: '100%' }} disabled={!location} />
-            <Button title="Cancel" onPress={() => setShowMapModal(false)} variant="card" style={{ width: '100%' }} textStyle={{ color: theme.primary }} />
-          </Animated.View>
-    </View>
-      </Modal>
     </KeyboardAvoidingView>
   );
 }

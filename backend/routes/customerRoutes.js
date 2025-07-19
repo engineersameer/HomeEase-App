@@ -17,6 +17,7 @@ router.post('/bookings', customerController.createBooking);
 router.get('/bookings', customerController.getBookings);
 router.get('/bookings/:bookingId', customerController.getBookingDetails);
 router.put('/bookings/:bookingId/cancel', customerController.cancelBooking);
+router.delete('/bookings/:bookingId', customerController.deleteBooking);
 
 // Chat functionality
 router.get('/chats', customerController.getChats);
