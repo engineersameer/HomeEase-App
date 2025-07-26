@@ -45,6 +45,72 @@ async function seedAdmin() {
   }
 }
 
+async function seedCustomer() {
+  const customerEmail = 'customer@homeease.com';
+  const customerPassword = 'customer123';
+
+  console.log('Checking for existing customer user...');
+  const existing = await User.findOne({ email: customerEmail, role: 'customer' });
+  if (existing) {
+    console.log('Customer user already exists:', existing.email);
+    return;
+  }
+  console.log('No existing customer found. Creating new customer...');
+  const customer = new User({
+    name: 'Test Customer',
+    email: customerEmail,
+    password: customerPassword,
+    role: 'customer',
+    status: 'active',
+    phone: '1234567890',
+    address: '123 Main St',
+    city: 'Test City',
+  });
+  try {
+    console.log('Saving new customer user...');
+    await customer.save();
+    console.log('Customer user created:', customer.email);
+  } catch (err) {
+    console.error('Error creating customer user:', err);
+  }
+}
+
+async function seedProvider() {
+  const providerEmail = 'provider@homeease.com';
+  const providerPassword = 'provider123';
+
+  console.log('Checking for existing provider user...');
+  const existing = await User.findOne({ email: providerEmail, role: 'provider' });
+  if (existing) {
+    console.log('Provider user already exists:', existing.email);
+    return;
+  }
+  console.log('No existing provider found. Creating new provider...');
+  const provider = new User({
+    name: 'Test Provider',
+    email: providerEmail,
+    password: providerPassword,
+    role: 'provider',
+    status: 'active',
+    isApproved: true,
+    approvalStatus: 'approved',
+    phone: '0987654321',
+    address: '456 Service Rd',
+    city: 'Provider City',
+    profession: 'Electrician',
+    experience: 5,
+    pricing: 100,
+    bio: 'Experienced electrician for all your needs.'
+  });
+  try {
+    console.log('Saving new provider user...');
+    await provider.save();
+    console.log('Provider user created:', provider.email);
+  } catch (err) {
+    console.error('Error creating provider user:', err);
+  }
+}
+
 async function seedMaintenance() {
   try {
     // Find an admin user
@@ -73,6 +139,8 @@ async function main() {
   try {
     await mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
     await seedAdmin();
+    await seedCustomer();
+    await seedProvider();
     await seedMaintenance();
   } catch (err) {
     console.error('Seeding error:', err);

@@ -23,6 +23,7 @@ router.delete('/bookings/:bookingId', customerController.deleteBooking);
 router.get('/chats', customerController.getChats);
 router.get('/chats/:chatId/messages', customerController.getChatMessages);
 router.post('/chats/:chatId/messages', customerController.sendMessage);
+router.post('/chats', customerController.findOrCreateChat);
 
 // Reviews
 router.post('/reviews', customerController.createReview);

@@ -224,6 +224,7 @@ export default function ProviderWelcome() {
               { icon: '📅', title: 'Availability', onPress: () => router.push('/provider/availability') },
               { icon: '📋', title: 'Bookings', onPress: () => router.push('/provider/provider-orders') },
               { icon: '🛎️', title: 'Requests', onPress: () => router.push({ pathname: '/provider/provider-orders', params: { tab: 'requests' } }) },
+              { icon: '💬', title: 'Inbox', onPress: () => router.push('/provider/provider-chat-list') },
               { icon: '💸', title: 'Earnings', onPress: () => router.push('/provider/earnings') },
               { icon: '⭐', title: 'Reviews', onPress: () => router.push('/provider/reviews') },
               { icon: '📝', title: 'Complaint to Admin', onPress: () => router.push('/provider/complaint') },

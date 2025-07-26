@@ -175,12 +175,14 @@ exports.deleteService = async (req, res) => {
 
 // Get provider's bookings
 exports.getBookings = async (req, res) => {
+  console.log("in get bookings")
   try {
+    console.log('Provider ID:', req.user.id);
     const bookings = await Booking.find({ providerId: req.user.id })
       .populate('customerId', 'name email phone')
       .populate('serviceId', 'title category price')
       .sort({ createdAt: -1 });
-
+    console.log('Bookings found:', bookings);
     res.json({
       success: true,
       bookings
@@ -348,13 +350,20 @@ exports.getChatMessages = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Chat not found' });
     }
 
-    // Mark messages as read
-    await chat.markAsRead(req.user.id);
+    // Mark all messages as delivered and read for this user if they are the receiver
+    let updated = false;
+    chat.messages.forEach(msg => {
+      if (msg.receiver && msg.receiver.toString() === req.user.id) {
+        if (!msg.delivered) { msg.delivered = true; updated = true; }
+        if (!msg.isRead) { msg.isRead = true; updated = true; }
+      }
+    });
+    if (updated) await chat.save();
 
     res.json({
       success: true,
       messages: chat.messages,
-      provider: chat.participants.find(p => p._id.toString() !== req.user.id)
+      customer: chat.participants.find(p => p._id.toString() !== req.user.id)
     });
   } catch (error) {
     console.error('Get chat messages error:', error);

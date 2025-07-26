@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { Fonts } from '../../Color/Color';
-import { getApiUrl, getApiUrlWithParams, apiCall, API_CONFIG } from '../../config/api';
+import { getApiUrl, getApiUrlWithParams, apiCall, API_CONFIG, API_BASE_URL } from '../../config/api';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -68,12 +68,9 @@ export default function ServiceSearch() {
       if (selectedLocation && selectedLocation !== '' && selectedLocation !== 'All') params.city = selectedLocation;
 
       const url = getApiUrlWithParams(API_CONFIG.ENDPOINTS.CUSTOMER_SERVICE_SEARCH, params);
-      console.log('Selected category:', selectedCategory);
-      console.log('Selected city:', selectedLocation);
-      console.log('Service search params:', params);
       console.log('Service search URL:', url);
-      // Always use GET, never pass a body or method override
       const data = await apiCall(url); 
+      console.log('Service search API response:', data);
       setSearchResults(data.services || []);
     } catch (error) {
       Alert.alert('Error', 'Failed to search services');
@@ -133,16 +130,30 @@ export default function ServiceSearch() {
     });
   };
 
-  const handleChatWithProvider = (service) => {
-    // Create or get existing chat
-    router.push({
-      pathname: '/customer/customer-chat',
-      params: { 
-        chatId: `chat_${user._id}_${service.provider._id}`,
-        providerId: service.provider._id,
-        serviceId: service._id
+  const handleChatWithProvider = async (service) => {
+    try {
+      // Get token
+      const token = await AsyncStorage.getItem('token');
+      console.log('Service object:', service);
+      console.log('Sending chat request:', { providerId: service.provider?._id, serviceId: service._id });
+      // Call backend to find or create chat
+      const res = await fetch(`${API_BASE_URL}/api/customer/chats`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ providerId: service.provider?._id, serviceId: service._id })
+      });
+      console.log('Chat response status:', res.status);
+      const data = await res.json();
+      console.log('Chat response data:', data);
+      if (data.success && data.chat) {
+        router.push({ pathname: '/customer/customer-chat', params: { chatId: data.chat._id } });
+      } else {
+        Alert.alert('Error', data.message || 'Failed to start chat');
       }
-    });
+    } catch (err) {
+      console.log('Chat request error:', err);
+      Alert.alert('Error', 'Failed to start chat');
+    }
   };
 
   const clearFilters = () => {

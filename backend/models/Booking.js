@@ -39,6 +39,11 @@ const bookingSchema = new mongoose.Schema({
     ref: 'Service',
     required: true
   },
+  providerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   status: { 
     type: String, 
     enum: ['neutral', 'pending', 'accepted', 'in-progress', 'completed', 'cancelled'], 

@@ -17,7 +17,7 @@ import { Fonts } from '../../Color/Color';
 import { getApiUrl, getApiUrlWithParams, apiCall, API_CONFIG } from '../../config/api';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import ProviderFooter from './shared/Footer';
 
 export default function ProviderChat() {
@@ -70,32 +70,46 @@ export default function ProviderChat() {
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim()) return;
-
+    console.log('sendMessage called');
+    console.log('newMessage value:', newMessage);
     const messageData = {
       content: newMessage.trim(),
-      senderId: user._id,
-      receiverId: customer._id,
+      senderId: user?._id,
+      receiverId: customer?._id,
       timestamp: new Date().toISOString()
     };
-
+    console.log('messageData:', messageData);
+    console.log('user:', user);
+    console.log('customer:', customer);
+    if (!newMessage.trim()) {
+      console.log('Early return: newMessage is empty after trim');
+      return;
+    }
     setSending(true);
     try {
       const url = getApiUrlWithParams(API_CONFIG.ENDPOINTS.PROVIDER_CHAT_SEND, { chatId: params.chatId });
-      await apiCall(url, {
+      console.log('Sending message to:', url);
+      const response = await apiCall(url, {
         method: 'POST',
         body: JSON.stringify(messageData)
       });
-
+      console.log('Send message response:', response);
       // Add message to local state
-      setMessages(prev => [...prev, { ...messageData, _id: Date.now().toString() }]);
+      setMessages(prev => [
+        ...prev,
+        {
+          ...messageData,
+          sender: { _id: user._id || user.id },
+          senderId: user._id || user.id,
+          _id: Date.now().toString()
+        }
+      ]);
       setNewMessage('');
-      
-      // Scroll to bottom
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: true });
       }, 100);
     } catch (error) {
+      console.log('Error after messageData:', error);
       Alert.alert('Error', 'Failed to send message');
     } finally {
       setSending(false);
@@ -111,16 +125,28 @@ export default function ProviderChat() {
   };
 
   const isMyMessage = (message) => {
-    return message.senderId === user?._id;
+    const myId = user?._id?.toString() || user?.id?.toString();
+    const senderId = message.senderId?.toString();
+    const senderObjId = message.sender?._id?.toString();
+    const senderStr = typeof message.sender === 'string' ? message.sender : undefined;
+    console.log('isMyMessage check:', { myId, senderId, senderObjId, senderStr });
+    return (
+      (senderId && senderId === myId) ||
+      (senderObjId && senderObjId === myId) ||
+      (senderStr && senderStr === myId)
+    );
   };
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.background }}>
         <Text style={{ color: theme.textDark, fontFamily: Fonts.body }}>Loading chat...</Text>
       </View>
     );
   }
+
+  // Add a log in render to confirm state updates
+  console.log('Rendering messages:', messages);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
@@ -176,43 +202,72 @@ export default function ProviderChat() {
               </Text>
             </View>
           ) : (
-            messages.map((message) => (
-              <View
-                key={message._id}
-                style={{
-                  marginBottom: 12,
-                  alignItems: isMyMessage(message) ? 'flex-end' : 'flex-start'
-                }}
-              >
-                <View style={{
-                  backgroundColor: isMyMessage(message) ? theme.primary : theme.card,
-                  paddingHorizontal: 16,
-                  paddingVertical: 12,
-                  borderRadius: 18,
-                  maxWidth: '80%',
-                  borderWidth: isMyMessage(message) ? 0 : 1,
-                  borderColor: theme.border
-                }}>
-                  <Text style={{
-                    color: isMyMessage(message) ? '#fff' : theme.textDark,
-                    fontFamily: Fonts.body,
-                    fontSize: 14,
-                    lineHeight: 20
+            messages.map((message) => {
+              const isMine = isMyMessage(message);
+              console.log('isMine:', isMine, 'message:', message, 'user:', user);
+              return (
+                <View
+                  key={message._id}
+                  style={{
+                    marginBottom: 10,
+                    alignItems: isMine ? 'flex-end' : 'flex-start',
+                  }}
+                >
+                  <View style={{
+                    backgroundColor: isMine ? '#128C7E' : '#F4F6F8', // WhatsApp dark green for outgoing, soft gray for incoming
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderRadius: 18,
+                    maxWidth: '80%',
+                    borderTopRightRadius: isMine ? 6 : 18,
+                    borderTopLeftRadius: isMine ? 18 : 6,
+                    borderBottomRightRadius: isMine ? 6 : 18,
+                    borderBottomLeftRadius: isMine ? 18 : 6,
+                    borderWidth: isMine ? 0 : 1,
+                    borderColor: isMine ? '#128C7E' : '#e0e0e0',
+                    alignSelf: isMine ? 'flex-end' : 'flex-start',
+                    shadowColor: isMine ? '#128C7E' : '#000',
+                    shadowOpacity: 0.10,
+                    shadowRadius: 3,
+                    elevation: 2,
+                    marginBottom: 2,
                   }}>
-                    {message.content}
-                  </Text>
-                  <Text style={{
-                    color: isMyMessage(message) ? 'rgba(255,255,255,0.7)' : theme.textLight,
-                    fontFamily: Fonts.caption,
-                    fontSize: 10,
-                    marginTop: 4,
-                    alignSelf: 'flex-end'
-                  }}>
-                    {formatTime(message.timestamp)}
-                  </Text>
+                    <Text style={{
+                      color: isMine ? '#fff' : '#222',
+                      fontFamily: Fonts.body,
+                      fontSize: 16,
+                      lineHeight: 22,
+                      letterSpacing: 0.1,
+                    }}>
+                      {message.content}
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end', marginTop: 8, gap: 2 }}>
+                      <Text style={{
+                        color: isMine ? 'rgba(255,255,255,0.85)' : '#888',
+                        fontFamily: Fonts.caption,
+                        fontSize: 12,
+                        fontWeight: '500',
+                        marginRight: 4,
+                        letterSpacing: 0.2,
+                      }}>
+                        {formatTime(message.timestamp || message.createdAt)}
+                      </Text>
+                      {isMine && (
+                        message.isRead ? (
+                          <MaterialCommunityIcons name="check-all" size={18} color="#34B7F1" style={{ marginLeft: 1 }} />
+                        ) : (
+                          message.delivered ? (
+                            <MaterialCommunityIcons name="check-all" size={18} color="#bbb" style={{ marginLeft: 1 }} />
+                          ) : (
+                            <MaterialCommunityIcons name="check" size={18} color="#bbb" style={{ marginLeft: 1 }} />
+                          )
+                        )
+                      )}
+                    </View>
+                  </View>
                 </View>
-              </View>
-            ))
+              );
+            })
           )}
         </ScrollView>
 

@@ -91,7 +91,7 @@ exports.searchServices = async (req, res) => {
     }
     console.log('Received filters:', req.query);
     console.log('MongoDB filters:', filters);
-    const services = await Service.find(filters);
+    const services = await Service.find(filters).populate('provider', 'name email _id');
     console.log('Returned services:', services.map(s => ({ category: s.category, city: s.city })));
     res.status(200).json({ success: true, services });
   } catch (error) {
@@ -201,6 +201,9 @@ exports.createBooking = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Service not available' });
     }
 
+    // Add this line to get providerId
+    const providerId = service.provider;
+
     // Prevent duplicate booking for the same customer and service
     const existingBooking = await Booking.findOne({ customerId: req.user.id, serviceId });
     if (existingBooking) {
@@ -218,6 +221,7 @@ exports.createBooking = async (req, res) => {
       specialNote,
       location,
       serviceId,
+      providerId, // <-- add this
       status: 'neutral'
     });
 
@@ -394,8 +398,15 @@ exports.getChatMessages = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Chat not found' });
     }
 
-    // Mark messages as read
-    await chat.markAsRead(req.user.id);
+    // Mark all messages as delivered and read for this user if they are the receiver
+    let updated = false;
+    chat.messages.forEach(msg => {
+      if (msg.receiver && msg.receiver.toString() === req.user.id) {
+        if (!msg.delivered) { msg.delivered = true; updated = true; }
+        if (!msg.isRead) { msg.isRead = true; updated = true; }
+      }
+    });
+    if (updated) await chat.save();
 
     res.json({
       success: true,
@@ -411,6 +422,7 @@ exports.getChatMessages = async (req, res) => {
 // Send message in chat
 exports.sendMessage = async (req, res) => {
   try {
+    console.log('sendMessage body:', req.body, 'chatId:', req.params.chatId, 'user:', req.user);
     const { chatId } = req.params;
     const { content, messageType = 'text' } = req.body;
 
@@ -589,5 +601,37 @@ exports.submitSupportRequest = async (req, res) => {
   } catch (err) {
     console.error('Submit support request error:', err);
     res.status(500).json({ success: false, message: 'Failed to submit support request' });
+  }
+};
+
+// Find or create chat between customer and provider for a service
+exports.findOrCreateChat = async (req, res) => {
+  try {
+    console.log('findOrCreateChat body:', req.body);
+    console.log('Authenticated user:', req.user);
+    const customerId = req.user.id;
+    const { providerId, serviceId } = req.body;
+    if (!providerId || !serviceId) {
+      return res.status(400).json({ success: false, message: 'providerId and serviceId are required' });
+    }
+    // Find or create chat
+    let chat = await Chat.findOne({
+      participants: { $all: [customerId, providerId] },
+      service: serviceId,
+      isActive: true
+    });
+    if (!chat) {
+      chat = new Chat({
+        participants: [customerId, providerId],
+        service: serviceId,
+        messages: []
+      });
+      await chat.save();
+    }
+    await chat.populate('participants', 'name email role');
+    res.json({ success: true, chat });
+  } catch (err) {
+    console.error('Find or create chat error:', err);
+    res.status(500).json({ success: false, message: 'Failed to find or create chat' });
   }
 };

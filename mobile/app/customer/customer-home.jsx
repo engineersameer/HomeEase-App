@@ -88,6 +88,9 @@ export default function CustomerHome() {
       case 'bookings':
         router.push('/customer/customer-bookings');
         break;
+      case 'inbox':
+        router.push('/customer/customer-chat-list');
+        break;
       case 'support':
         router.push('/customer/customer-support');
         break;
@@ -340,6 +343,7 @@ export default function CustomerHome() {
             {[
               { icon: '🔍', title: 'Search Services', action: 'search' },
               { icon: '📋', title: 'My Bookings', action: 'bookings' },
+              { icon: '💬', title: 'Inbox', action: 'inbox' },
               { icon: '💬', title: 'Support', action: 'support' },
               { icon: '🔔', title: 'Notifications', action: 'notifications' },
             ].map((item, index) => (

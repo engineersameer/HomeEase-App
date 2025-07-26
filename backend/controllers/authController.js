@@ -477,6 +477,7 @@ const providerSignin = async (req, res) => {
 
 // Admin signin
 const adminSignin = async (req, res) => {
+  console.log("in admin signin")
   try {
     const { email, password } = req.body;
 
