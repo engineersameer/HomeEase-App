@@ -249,7 +249,7 @@ exports.createBooking = async (req, res) => {
 // Get customer's bookings
 exports.getBookings = async (req, res) => {
   try {
-    const { status, limit = 10, page = 1 } = req.query;
+    const { status, limit = 10, page = 1, fromDate, toDate, serviceType } = req.query;
     let query = { customerId: req.user.id };
     if (status && status !== 'all') {
       if (status === 'in-progress') {
@@ -258,6 +258,15 @@ exports.getBookings = async (req, res) => {
         query.status = status;
       }
     }
+    if (fromDate) {
+      query.bookingDate = { ...query.bookingDate, $gte: new Date(fromDate) };
+    }
+    if (toDate) {
+      query.bookingDate = { ...query.bookingDate, $lte: new Date(toDate) };
+    }
+    if (serviceType) {
+      query['serviceId.category'] = serviceType;
+    }
     const skip = (page - 1) * limit;
     const bookings = await Booking.find(query)
       .populate({
@@ -265,6 +274,7 @@ exports.getBookings = async (req, res) => {
         select: 'title category price provider',
         populate: { path: 'provider', select: 'name email phone profileImage image' }
       })
+      .populate('review')
       .sort({ createdAt: -1 })
       .limit(parseInt(limit))
       .skip(skip);
@@ -294,7 +304,8 @@ exports.getBookingDetails = async (req, res) => {
       customerId: req.user.id
     })
       .populate('providerId', 'name email phone address')
-      .populate('serviceId', 'title category description price');
+      .populate('serviceId', 'title category description price')
+      .populate('review'); // <-- Added to include review in response
 
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
@@ -449,33 +460,36 @@ exports.sendMessage = async (req, res) => {
 // Create a review
 exports.createReview = async (req, res) => {
   try {
-    const { serviceId, rating, reviewText } = req.body;
+    const { bookingId, rating, reviewText } = req.body;
 
-    // Validate service exists
-    const service = await Service.findById(serviceId);
-    if (!service) {
-      return res.status(404).json({ success: false, message: 'Service not found' });
+    // Validate booking exists and is completed
+    const booking = await Booking.findOne({ _id: bookingId, customerId: req.user.id, status: 'completed' })
+      .populate('serviceId providerId');
+    if (!booking) {
+      return res.status(400).json({ success: false, message: 'You can only review completed bookings.' });
     }
-
+    // Prevent duplicate review
+    if (booking.review) {
+      return res.status(400).json({ success: false, message: 'You have already reviewed this booking.' });
+    }
     // Create review
     const review = new Review({
-      service: serviceId,
+      reviewText,
+      service: booking.serviceId._id,
       rating,
-      reviewText
+      customer: req.user.id,
+      provider: booking.providerId._id,
+      booking: booking._id
     });
-
     await review.save();
-
-    // Optionally update service rating if needed
-    if (service && rating) {
-      await service.updateRating(rating);
+    // Link review to booking
+    booking.review = review._id;
+    await booking.save();
+    // Optionally update service rating
+    if (booking.serviceId && rating) {
+      await booking.serviceId.updateRating(rating);
     }
-
-    res.status(201).json({
-      success: true,
-      message: 'Review submitted successfully',
-      review
-    });
+    res.status(201).json({ success: true, message: 'Review submitted', review });
   } catch (error) {
     console.error('Create review error:', error);
     res.status(500).json({ success: false, message: 'Failed to submit review' });

@@ -73,6 +73,24 @@ export default function ProviderOrders() {
     }
   };
 
+  const handleComplete = async (bookingId) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const res = await fetch(`${API_BASE_URL}/api/provider/bookings/${bookingId}/complete`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchBookings();
+      } else {
+        Alert.alert('Error', data.message || 'Failed to complete booking');
+      }
+    } catch (err) {
+      Alert.alert('Error', 'Failed to complete booking');
+    }
+  };
+
   const renderBooking = ({ item }) => (
     <View style={{ backgroundColor: theme.card, marginVertical: 8, marginHorizontal: 16, borderRadius: 12, padding: 16, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4 }}>
       <Text style={{ color: theme.textDark, fontWeight: 'bold', fontSize: 16 }}>{item.serviceId?.title || 'Service'}</Text>
@@ -94,6 +112,14 @@ export default function ProviderOrders() {
             <Text style={{ color: '#fff', fontWeight: 'bold' }}>Reject</Text>
           </TouchableOpacity>
         </View>
+      )}
+      {item.status === 'accepted' && (
+        <TouchableOpacity
+          onPress={() => handleComplete(item._id)}
+          style={{ backgroundColor: '#4CAF50', padding: 10, borderRadius: 8, marginTop: 12 }}
+        >
+          <Text style={{ color: '#fff', fontWeight: 'bold' }}>Complete Booking</Text>
+        </TouchableOpacity>
       )}
     </View>
   );

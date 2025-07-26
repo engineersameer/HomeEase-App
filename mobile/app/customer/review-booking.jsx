@@ -26,6 +26,7 @@ export default function ReviewBooking() {
   const [comment, setComment] = useState('');
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [existingReview, setExistingReview] = useState(null);
 
   useEffect(() => {
     fetchBookingDetails();
@@ -34,10 +35,19 @@ export default function ReviewBooking() {
   const fetchBookingDetails = async () => {
     try {
       const url = getApiUrlWithParams(API_CONFIG.ENDPOINTS.CUSTOMER_BOOKING_DETAIL, { bookingId: params.bookingId });
+      console.log('Fetching booking details from:', url);
       const data = await apiCall(url);
+      console.log('Booking details response:', data);
       setBooking(data.booking);
+      if (data.booking?.review) {
+        setExistingReview(data.booking.review);
+        setRating(data.booking.review.rating);
+        setComment(data.booking.review.reviewText);
+      }
     } catch (error) {
       Alert.alert('Error', 'Failed to fetch booking details');
+    } finally {
+      setLoading(false); // Ensure loading is stopped
     }
   };
 
@@ -46,15 +56,17 @@ export default function ReviewBooking() {
       Alert.alert('Error', 'Please provide both rating and comment');
       return;
     }
-
+    if (existingReview) {
+      Alert.alert('Info', 'You have already reviewed this booking.');
+      return;
+    }
     try {
       await apiCall(getApiUrl(API_CONFIG.ENDPOINTS.CUSTOMER_REVIEWS), {
         method: 'POST',
         body: JSON.stringify({
           bookingId: params.bookingId,
           rating,
-          comment,
-          providerId: booking.provider._id
+          reviewText: comment
         })
       });
       Alert.alert('Success', 'Review submitted successfully');
@@ -187,7 +199,8 @@ export default function ReviewBooking() {
           <Text style={{
             color: theme.textLight,
             fontFamily: Fonts.body,
-            textAlign: 'center'
+            textAlign: 'center',
+            marginBottom: 8
           }}>
             {rating === 0 && 'Tap to rate'}
             {rating === 1 && 'Poor'}
@@ -196,6 +209,11 @@ export default function ReviewBooking() {
             {rating === 4 && 'Very Good'}
             {rating === 5 && 'Excellent'}
           </Text>
+          {existingReview && (
+            <Text style={{ color: theme.primary, fontFamily: Fonts.body, marginTop: 8 }}>
+              You have already reviewed this booking.
+            </Text>
+          )}
         </View>
 
         {/* Comment Section */}
@@ -253,7 +271,7 @@ export default function ReviewBooking() {
         <TouchableOpacity
           onPress={submitReview}
           style={{
-            backgroundColor: theme.primary,
+            backgroundColor: existingReview ? theme.card : theme.primary,
             paddingVertical: 16,
             borderRadius: 12,
             alignItems: 'center',
@@ -264,14 +282,15 @@ export default function ReviewBooking() {
             shadowRadius: 8,
             elevation: 8,
           }}
+          disabled={!!existingReview}
         >
           <Text style={{
-            color: '#fff',
+            color: existingReview ? theme.textLight : '#fff',
             fontSize: 16,
             fontWeight: 'bold',
             fontFamily: Fonts.subheading
           }}>
-            Submit Review
+            {existingReview ? 'Review Submitted' : 'Submit Review'}
           </Text>
         </TouchableOpacity>
 

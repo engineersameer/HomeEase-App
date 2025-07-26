@@ -280,27 +280,24 @@ exports.completeBooking = async (req, res) => {
   try {
     const { bookingId } = req.params;
     const { actualCost, notes } = req.body;
-
-    const booking = await Booking.findOneAndUpdate(
-      { _id: bookingId, providerId: req.user.id, status: 'accepted' },
-      { 
-        status: 'completed',
-        actualCost: actualCost || booking.estimatedCost,
-        providerNotes: notes,
-        completedAt: new Date()
-      },
-      { new: true }
-    );
-
+    console.log('Attempting to complete booking:', { bookingId, providerId: req.user.id });
+    const booking = await Booking.findOne({ _id: bookingId, providerId: req.user.id });
+    console.log('Found booking:', booking);
     if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found or not in accepted status' });
+      return res.status(404).json({ success: false, message: 'Booking not found' });
     }
-
+    if (booking.status !== 'accepted') {
+      return res.status(400).json({ success: false, message: `Booking status must be 'accepted' to complete. Current status: ${booking.status}` });
+    }
+    booking.status = 'completed';
+    booking.actualCost = actualCost || booking.estimatedCost;
+    booking.providerNotes = notes;
+    booking.completedAt = new Date();
+    await booking.save();
     // Update service stats
     await Service.findByIdAndUpdate(booking.serviceId, {
       $inc: { totalBookings: 1, completedBookings: 1 }
     });
-
     res.json({
       success: true,
       message: 'Booking completed successfully',
@@ -405,7 +402,8 @@ exports.getReviews = async (req, res) => {
     const serviceIds = services.map(s => s._id);
     // Fetch reviews for these services
     const reviews = await Review.find({ service: { $in: serviceIds } })
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .populate('customer', 'name email phone');
 
     res.json({
       success: true,

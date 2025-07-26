@@ -68,6 +68,11 @@ const bookingSchema = new mongoose.Schema({
   completedAt: {
     type: Date
   },
+  review: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Review',
+    required: false
+  },
   createdAt: {
     type: Date,
     default: Date.now
