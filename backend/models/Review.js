@@ -32,6 +32,35 @@ const reviewSchema = new mongoose.Schema({
     type: Number,
     min: 1,
     max: 5
+  },
+  // Provider response fields
+  providerResponse: {
+    type: String,
+    trim: true,
+    maxlength: 500
+  },
+  responseDate: {
+    type: Date
+  },
+  isModerated: {
+    type: Boolean,
+    default: false
+  },
+  moderationStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
+  },
+  moderatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  moderationDate: {
+    type: Date
+  },
+  rejectionReason: {
+    type: String,
+    trim: true
   }
 }, {
   timestamps: true
@@ -39,5 +68,6 @@ const reviewSchema = new mongoose.Schema({
 
 // Index for efficient querying by service
 reviewSchema.index({ service: 1, createdAt: -1 });
+reviewSchema.index({ moderationStatus: 1 });
 
 module.exports = mongoose.model('Review', reviewSchema); 

@@ -305,7 +305,13 @@ exports.getBookingDetails = async (req, res) => {
     })
       .populate('providerId', 'name email phone address')
       .populate('serviceId', 'title category description price')
-      .populate('review'); // <-- Added to include review in response
+      .populate({
+        path: 'review',
+        populate: {
+          path: 'provider',
+          select: 'name email'
+        }
+      });
 
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });

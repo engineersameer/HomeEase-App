@@ -49,6 +49,7 @@ router.post('/chats/:chatId/messages', providerController.sendMessage);
 
 // Reviews
 router.get('/reviews', providerController.getReviews);
+router.post('/reviews/:reviewId/response', providerController.addReviewResponse);
 
 // Availability
 router.put('/availability', providerController.updateAvailability);
