@@ -447,6 +447,124 @@ const getProviderReviews = async (req, res) => {
   }
 };
 
+// Review Response Moderation
+const getPendingReviewResponses = async (req, res) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+    const skip = (page - 1) * limit;
+
+    const responses = await Review.find({ 
+      providerResponse: { $exists: true, $ne: null },
+      moderationStatus: 'pending' 
+    })
+      .populate('provider', 'name email')
+      .populate('customer', 'name')
+      .populate('service', 'title')
+      .skip(skip)
+      .limit(parseInt(limit))
+      .sort({ responseDate: -1 });
+
+    const total = await Review.countDocuments({ 
+      providerResponse: { $exists: true, $ne: null },
+      moderationStatus: 'pending' 
+    });
+
+    res.json({
+      success: true,
+      responses,
+      pagination: {
+        current: parseInt(page),
+        total: Math.ceil(total / limit),
+        totalResponses: total
+      }
+    });
+  } catch (error) {
+    console.error('Get pending review responses error:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
+const moderateReviewResponse = async (req, res) => {
+  try {
+    const { reviewId } = req.params;
+    const { action, rejectionReason } = req.body; // action: 'approve' or 'reject'
+
+    if (!['approve', 'reject'].includes(action)) {
+      return res.status(400).json({ success: false, message: 'Invalid action' });
+    }
+
+    const review = await Review.findById(reviewId);
+    if (!review) {
+      return res.status(404).json({ success: false, message: 'Review not found' });
+    }
+
+    if (!review.providerResponse) {
+      return res.status(400).json({ success: false, message: 'No response to moderate' });
+    }
+
+    if (action === 'approve') {
+      review.moderationStatus = 'approved';
+      review.isModerated = true;
+    } else {
+      review.moderationStatus = 'rejected';
+      review.isModerated = true;
+      if (rejectionReason) {
+        review.rejectionReason = rejectionReason;
+      }
+    }
+
+    review.moderatedBy = req.user.id;
+    review.moderationDate = new Date();
+
+    await review.save();
+
+    res.json({
+      success: true,
+      message: `Response ${action}d successfully`,
+      review
+    });
+  } catch (error) {
+    console.error('Moderate review response error:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
+const getAllReviewResponses = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, status } = req.query;
+    const skip = (page - 1) * limit;
+
+    let query = { providerResponse: { $exists: true, $ne: null } };
+    if (status) {
+      query.moderationStatus = status;
+    }
+
+    const responses = await Review.find(query)
+      .populate('provider', 'name email')
+      .populate('customer', 'name')
+      .populate('service', 'title')
+      .populate('moderatedBy', 'name')
+      .skip(skip)
+      .limit(parseInt(limit))
+      .sort({ responseDate: -1 });
+
+    const total = await Review.countDocuments(query);
+
+    res.json({
+      success: true,
+      responses,
+      pagination: {
+        current: parseInt(page),
+        total: Math.ceil(total / limit),
+        totalResponses: total
+      }
+    });
+  } catch (error) {
+    console.error('Get all review responses error:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
 // Reports Generation
 const generateReport = async (req, res) => {
   try {
@@ -903,6 +1021,11 @@ module.exports = {
   // Provider Ratings
   getProviderRatings,
   getProviderReviews,
+  
+  // Review Response Moderation
+  getPendingReviewResponses,
+  moderateReviewResponse,
+  getAllReviewResponses,
   
   // Reports
   generateReport,
