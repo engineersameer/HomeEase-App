@@ -400,10 +400,11 @@ exports.getReviews = async (req, res) => {
     // Fetch all services for this provider
     const services = await Service.find({ provider: req.user.id }, '_id');
     const serviceIds = services.map(s => s._id);
-    // Fetch reviews for these services
+    // Fetch reviews for these services with all response-related fields
     const reviews = await Review.find({ service: { $in: serviceIds } })
       .sort({ createdAt: -1 })
-      .populate('customer', 'name email phone');
+      .populate('customer', 'name email phone')
+      .populate('moderatedBy', 'name');
 
     res.json({
       success: true,
@@ -412,6 +413,49 @@ exports.getReviews = async (req, res) => {
   } catch (error) {
     console.error('Get reviews error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch reviews' });
+  }
+};
+
+// Add provider response to review
+exports.addReviewResponse = async (req, res) => {
+  try {
+    const { reviewId } = req.params;
+    const { response } = req.body;
+
+    if (!response || !response.trim()) {
+      return res.status(400).json({ success: false, message: 'Response cannot be empty' });
+    }
+
+    // Find the review and check if it belongs to this provider
+    const review = await Review.findById(reviewId);
+    if (!review) {
+      return res.status(404).json({ success: false, message: 'Review not found' });
+    }
+
+    if (review.provider.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'You can only respond to your own reviews' });
+    }
+
+    if (review.providerResponse) {
+      return res.status(400).json({ success: false, message: 'You have already responded to this review' });
+    }
+
+    // Update review with provider response
+    review.providerResponse = response.trim();
+    review.responseDate = new Date();
+    review.moderationStatus = 'pending';
+    review.isModerated = false;
+
+    await review.save();
+
+    res.json({
+      success: true,
+      message: 'Response submitted successfully. It will be reviewed by admin before being published.',
+      review
+    });
+  } catch (error) {
+    console.error('Add review response error:', error);
+    res.status(500).json({ success: false, message: 'Failed to submit response' });
   }
 };
 

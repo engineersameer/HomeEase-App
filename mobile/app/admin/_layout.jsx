@@ -76,6 +76,7 @@ export default function AdminLayout() {
   const lastSegment = segments[segments.length - 1];
   let current = 'home';
   if (lastSegment === 'admin-users') current = 'users';
+  else if (lastSegment === 'admin-reviews') current = 'reviews';
   else if (lastSegment === 'admin-reports') current = 'reports';
   else if (lastSegment === 'admin-terms') current = 'terms';
   else if (lastSegment === 'admin-profile') current = 'profile';
@@ -83,7 +84,7 @@ export default function AdminLayout() {
   else if (lastSegment === 'admin-add-service') current = 'add-service';
 
   // Only show footer on main admin tabs
-  const showFooter = ['home', 'users', 'reports', 'terms', 'profile', 'add-service'].includes(current);
+  const showFooter = ['home', 'users', 'reviews', 'reports', 'terms', 'profile', 'add-service'].includes(current);
 
   return (
     <View style={{ flex: 1 }}>

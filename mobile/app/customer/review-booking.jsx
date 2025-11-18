@@ -40,6 +40,9 @@ export default function ReviewBooking() {
       console.log('Booking details response:', data);
       setBooking(data.booking);
       if (data.booking?.review) {
+        console.log('Review data found:', data.booking.review);
+        console.log('Provider response:', data.booking.review.providerResponse);
+        console.log('Moderation status:', data.booking.review.moderationStatus);
         setExistingReview(data.booking.review);
         setRating(data.booking.review.rating);
         setComment(data.booking.review.reviewText);
@@ -266,6 +269,105 @@ export default function ReviewBooking() {
             {comment.length}/500 characters
           </Text>
         </View>
+
+        {/* Provider Response Section - Only show if review exists and has approved response */}
+        {existingReview && existingReview.providerResponse && existingReview.moderationStatus === 'approved' && (
+          <View style={{
+            backgroundColor: theme.card,
+            borderRadius: 12,
+            padding: 16,
+            marginBottom: 20,
+            borderWidth: 1,
+            borderColor: theme.border,
+            borderLeftWidth: 4,
+            borderLeftColor: theme.primary
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+              <Text style={{ fontSize: 20, marginRight: 8 }}>💬</Text>
+              <Text style={{
+                fontSize: 16,
+                fontWeight: 'bold',
+                color: theme.primary,
+                fontFamily: Fonts.subheading
+              }}>
+                Provider Response
+              </Text>
+            </View>
+            
+            <Text style={{
+              color: theme.textDark,
+              fontFamily: Fonts.body,
+              fontSize: 15,
+              lineHeight: 22,
+              marginBottom: 8
+            }}>
+              {existingReview.providerResponse}
+            </Text>
+            
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{
+                color: theme.textLight,
+                fontSize: 12,
+                fontFamily: Fonts.caption
+              }}>
+                {booking.provider?.name || 'Service Provider'}
+              </Text>
+              <Text style={{
+                color: theme.textLight,
+                fontSize: 12,
+                fontFamily: Fonts.caption
+              }}>
+                {existingReview.responseDate ? new Date(existingReview.responseDate).toLocaleDateString() : ''}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Temporary Test Button - Remove after testing */}
+        {existingReview && (
+          <TouchableOpacity 
+            style={{
+              backgroundColor: '#007AFF',
+              padding: 12,
+              borderRadius: 8,
+              marginBottom: 20,
+              alignItems: 'center'
+            }}
+            onPress={() => {
+              // Create mock provider response for testing
+              const mockReview = {
+                ...existingReview,
+                providerResponse: "Thank you so much for your wonderful review! We're delighted that you're satisfied with our service. We look forward to serving you again soon.",
+                moderationStatus: 'approved',
+                responseDate: new Date().toISOString()
+              };
+              setExistingReview(mockReview);
+              Alert.alert('Test', 'Mock provider response added! Check below.');
+            }}
+          >
+            <Text style={{ color: 'white', fontWeight: 'bold' }}>
+              🧪 Test Provider Response
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Temporary Test - Remove after testing */}
+        {existingReview && (
+          <View style={{
+            backgroundColor: '#FFF3CD',
+            borderRadius: 12,
+            padding: 16,
+            marginBottom: 20,
+            borderWidth: 1,
+            borderColor: '#FFEAA7'
+          }}>
+            <Text style={{ fontWeight: 'bold', marginBottom: 8 }}>🔍 Debug Info:</Text>
+            <Text>Has review: {existingReview ? 'Yes' : 'No'}</Text>
+            <Text>Provider response: {existingReview?.providerResponse || 'None'}</Text>
+            <Text>Moderation status: {existingReview?.moderationStatus || 'None'}</Text>
+            <Text>Response date: {existingReview?.responseDate || 'None'}</Text>
+          </View>
+        )}
 
         {/* Submit Button */}
         <TouchableOpacity

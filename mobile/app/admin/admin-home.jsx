@@ -391,6 +391,7 @@ export default function AdminHome() {
               { icon: '👥', title: 'Manage Users', action: () => router.push('/admin/admin-users'), color: '#3B82F6' },
               { icon: '⚠️', title: 'View Complaints', action: () => router.push('/admin/admin-complaints'), color: '#EF4444' },
               { icon: '📊', title: 'Generate Reports', action: () => router.push('/admin/admin-reports'), color: '#8B5CF6' },
+              { icon: '💬', title: 'Review Moderation', action: () => router.push('/admin/admin-reviews'), color: '#F97316' },
               { icon: '📝', title: 'Manage Content', action: () => router.push('/admin/admin-content'), color: '#F59E0B' },
               { icon: '🔧', title: 'System Maintenance', action: () => router.push('/admin/admin-maintenance'), color: '#10B981' },
               { icon: '📈', title: 'Analytics', action: () => router.push('/admin/admin-reports'), color: '#06B6D4' },

@@ -548,4 +548,9 @@ router.get('/providers/:providerId/reviews', auth, adminAuth, async (req, res) =
   }
 });
 
+// Review Response Moderation
+router.get('/review-responses/pending', auth, adminAuth, adminController.getPendingReviewResponses);
+router.get('/review-responses', auth, adminAuth, adminController.getAllReviewResponses);
+router.put('/review-responses/:reviewId/moderate', auth, adminAuth, adminController.moderateReviewResponse);
+
 module.exports = router; 
