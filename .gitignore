@@ -23,17 +23,33 @@ frontend/package-lock.json
 frontend/.expo/
 frontend/.expo-shared/
 
+# ========================
+# MOBILE / EXPO FILES
+# ========================
+mobile/node_modules/
+mobile/package-lock.json
+mobile/.expo/
+mobile/.expo-shared/
+
 # Android
 frontend/android/.gradle/
 frontend/android/app/build/
 frontend/android/.idea/
 frontend/android/local.properties
 frontend/android/app/debug.keystore
+mobile/android/.gradle/
+mobile/android/app/build/
+mobile/android/.idea/
+mobile/android/local.properties
+mobile/android/app/debug.keystore
 
 # iOS
 frontend/ios/Pods/
 frontend/ios/build/
 frontend/ios/DerivedData/
+mobile/ios/Pods/
+mobile/ios/build/
+mobile/ios/DerivedData/
 
 # Metro / Build
 *.pack
