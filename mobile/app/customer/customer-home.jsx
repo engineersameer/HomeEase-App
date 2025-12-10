@@ -91,6 +91,9 @@ export default function CustomerHome() {
       case 'inbox':
         router.push('/customer/customer-chat-list');
         break;
+      case 'chatbot':
+        router.push('/customer/customer-support');
+        break;
       case 'support':
         router.push('/customer/customer-support');
         break;
@@ -344,7 +347,7 @@ export default function CustomerHome() {
               { icon: '🔍', title: 'Search Services', action: 'search' },
               { icon: '📋', title: 'My Bookings', action: 'bookings' },
               { icon: '💬', title: 'Inbox', action: 'inbox' },
-              { icon: '💬', title: 'Support', action: 'support' },
+              { icon: '🤖', title: 'Chatbot', action: 'chatbot' },
               { icon: '🔔', title: 'Notifications', action: 'notifications' },
             ].map((item, index) => (
               <TouchableOpacity
