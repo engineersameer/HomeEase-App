@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,9 @@ import {
   Alert,
   Linking,
   SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -15,12 +18,25 @@ import { Colors, Fonts } from '../../Color/Color';
 import Footer from '../customer/shared/Footer';
 import { useTheme } from '../../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
+import { getApiUrl, apiCall, API_CONFIG } from '../../config/api';
 
 export default function CustomerSupport() {
   const router = useRouter();
   const { theme } = useTheme();
+  const scrollViewRef = useRef(null);
 
   const [expandedFAQ, setExpandedFAQ] = useState(null);
+  const [showChatbot, setShowChatbot] = useState(false);
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      text: 'Hello! I\'m your HomeEase AI assistant. How can I help you today?',
+      sender: 'bot',
+      timestamp: new Date(),
+    }
+  ]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const faqs = [
     {
@@ -55,12 +71,76 @@ export default function CustomerSupport() {
     }
   ];
 
+  const sendMessage = async () => {
+    if (!inputMessage.trim()) return;
+
+    const userMessage = {
+      id: messages.length + 1,
+      text: inputMessage.trim(),
+      sender: 'user',
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsLoading(true);
+
+    try {
+      console.log('🚀 Sending message to chatbot:', userMessage.text);
+      
+      const token = await AsyncStorage.getItem('token');
+      // Use localhost for browser, IP for mobile
+      const baseUrl = typeof window !== 'undefined' && window.location.hostname === 'localhost' 
+        ? 'http://localhost:5000' 
+        : API_CONFIG.BASE_URL;
+      
+      const response = await fetch(`${baseUrl}/api/chatbot/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ message: userMessage.text })
+      });
+
+      const data = await response.json();
+      console.log('📥 Chatbot response:', data);
+
+      if (data.success) {
+        const botMessage = {
+          id: messages.length + 2,
+          text: data.reply,
+          sender: 'bot',
+          timestamp: new Date(),
+          sources: data.sources,
+        };
+        setMessages(prev => [...prev, botMessage]);
+      } else {
+        throw new Error(data.message || 'Failed to get response');
+      }
+    } catch (error) {
+      console.error('Chatbot error:', error);
+      const errorMessage = {
+        id: messages.length + 2,
+        text: 'Sorry, I encountered an error. Please try again or contact support.',
+        sender: 'bot',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  };
+
   const supportOptions = [
     {
-      title: 'Live Chat',
-      icon: '💬',
-      description: 'Chat with our support team',
-      action: () => Alert.alert('Live Chat', 'Live chat feature coming soon!')
+      title: 'Chatbot',
+      icon: '🤖',
+      description: 'Chat with our AI assistant',
+      action: () => setShowChatbot(true)
     },
     {
       title: 'Call Support',
@@ -248,6 +328,167 @@ export default function CustomerSupport() {
       </View>
     </TouchableOpacity>
   );
+
+  if (showChatbot) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+        {/* Chatbot Header */}
+        <View style={{
+          backgroundColor: theme.card,
+          paddingTop: 45,
+          paddingBottom: 16,
+          paddingHorizontal: 24,
+          borderBottomWidth: 1,
+          borderBottomColor: theme.border,
+          flexDirection: 'row',
+          alignItems: 'center',
+        }}>
+          <TouchableOpacity onPress={() => setShowChatbot(false)} style={{ marginRight: 12 }}>
+            <Ionicons name="arrow-back" size={24} color={theme.textDark} />
+          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.textDark, fontFamily: Fonts.heading }}>
+              Chatbot Assistant
+            </Text>
+            <Text style={{ fontSize: 12, color: theme.textLight, fontFamily: Fonts.caption }}>
+              Powered by Homeease
+            </Text>
+          </View>
+          <View style={{
+            backgroundColor: '#10B981',
+            width: 10,
+            height: 10,
+            borderRadius: 5,
+          }} />
+        </View>
+
+        <KeyboardAvoidingView 
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        >
+          {/* Messages */}
+          <ScrollView
+            ref={scrollViewRef}
+            style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
+            contentContainerStyle={{ paddingBottom: 20 }}
+            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+          >
+            {messages.map((message) => (
+              <View
+                key={message.id}
+                style={{
+                  marginBottom: 12,
+                  alignSelf: message.sender === 'user' ? 'flex-end' : 'flex-start',
+                  maxWidth: '80%',
+                }}
+              >
+                <View style={{
+                  backgroundColor: message.sender === 'user' ? theme.primary : theme.card,
+                  borderRadius: 16,
+                  padding: 12,
+                  borderWidth: message.sender === 'bot' ? 1 : 0,
+                  borderColor: theme.border,
+                }}>
+                  <Text style={{
+                    fontSize: 14,
+                    color: message.sender === 'user' ? '#FFFFFF' : theme.textDark,
+                    fontFamily: Fonts.body,
+                    lineHeight: 20,
+                  }}>
+                    {message.text}
+                  </Text>
+                  {message.sources && message.sources.length > 0 && (
+                    <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: theme.border }}>
+                      <Text style={{ fontSize: 10, color: theme.textLight, fontFamily: Fonts.caption }}>
+                        Sources: {message.sources.map(s => s.category).join(', ')}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={{
+                  fontSize: 10,
+                  color: theme.textLight,
+                  marginTop: 4,
+                  marginLeft: message.sender === 'user' ? 0 : 8,
+                  marginRight: message.sender === 'user' ? 8 : 0,
+                  textAlign: message.sender === 'user' ? 'right' : 'left',
+                  fontFamily: Fonts.caption,
+                }}>
+                  {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+              </View>
+            ))}
+            {isLoading && (
+              <View style={{
+                alignSelf: 'flex-start',
+                backgroundColor: theme.card,
+                borderRadius: 16,
+                padding: 12,
+                borderWidth: 1,
+                borderColor: theme.border,
+                marginBottom: 12,
+              }}>
+                <ActivityIndicator size="small" color={theme.primary} />
+              </View>
+            )}
+          </ScrollView>
+
+          {/* Input Area */}
+          <View style={{
+            backgroundColor: theme.card,
+            borderTopWidth: 1,
+            borderTopColor: theme.border,
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+          }}>
+            <TextInput
+              style={{
+                flex: 1,
+                backgroundColor: theme.background,
+                borderRadius: 20,
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                fontSize: 14,
+                color: theme.textDark,
+                fontFamily: Fonts.body,
+                borderWidth: 1,
+                borderColor: theme.border,
+                marginRight: 8,
+              }}
+              placeholder="Type your message..."
+              placeholderTextColor={theme.textLight}
+              value={inputMessage}
+              onChangeText={setInputMessage}
+              multiline
+              maxLength={500}
+              editable={!isLoading}
+            />
+            <TouchableOpacity
+              onPress={sendMessage}
+              disabled={!inputMessage.trim() || isLoading}
+              style={{
+                backgroundColor: inputMessage.trim() && !isLoading ? theme.primary : theme.border,
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <Ionicons 
+                name="send" 
+                size={20} 
+                color={inputMessage.trim() && !isLoading ? '#FFFFFF' : theme.textLight} 
+              />
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
