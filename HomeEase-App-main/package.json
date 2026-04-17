@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "expo": "^53.0.19",
+    "multer": "^2.0.1"
+  }
+}

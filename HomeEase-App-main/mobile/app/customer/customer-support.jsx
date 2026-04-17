@@ -1,0 +1,703 @@
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  TextInput,
+  Alert,
+  Linking,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  Image,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { Colors, Fonts } from '../../Color/Color';
+import Footer from '../customer/shared/Footer';
+import { useTheme } from '../../context/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
+import { getApiUrl, apiCall, API_CONFIG } from '../../config/api';
+import * as ImagePicker from 'expo-image-picker';
+
+export default function CustomerSupport() {
+  const router = useRouter();
+  const { theme } = useTheme();
+  const scrollViewRef = useRef(null);
+
+  const [expandedFAQ, setExpandedFAQ] = useState(null);
+  const [showChatbot, setShowChatbot] = useState(false);
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      text: 'Hello! I\'m your HomeEase AI assistant. How can I help you today?',
+      sender: 'bot',
+      timestamp: new Date(),
+    }
+  ]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const faqs = [
+    {
+      id: 1,
+      question: 'How do I book a service?',
+      answer: 'To book a service, go to "Search Services" from the home screen, select your desired service category, choose a provider, and follow the booking process. You can also specify your requirements and preferred time.'
+    },
+    {
+      id: 2,
+      question: 'How do I cancel a booking?',
+      answer: 'You can cancel a booking from the "My Bookings" section. Select the booking you want to cancel and tap the "Cancel" button. Note that cancellation policies may vary by provider.'
+    },
+    {
+      id: 3,
+      question: 'How do I pay for services?',
+      answer: 'We support multiple payment methods including cash on delivery, bank transfer, and digital wallets. Payment options will be shown during the booking process.'
+    },
+    {
+      id: 4,
+      question: 'What if I\'m not satisfied with the service?',
+      answer: 'If you\'re not satisfied with the service, please contact our support team immediately. We have a satisfaction guarantee and will work to resolve any issues.'
+    },
+    {
+      id: 5,
+      question: 'How do I rate and review a service?',
+      answer: 'After a service is completed, you can rate and review the provider from the "My Bookings" section. Select the completed booking and tap "Review" to share your experience.'
+    },
+    {
+      id: 6,
+      question: 'Are the service providers verified?',
+      answer: 'Yes, all service providers on our platform are thoroughly verified. We check their credentials, experience, and conduct background checks to ensure quality and reliability.'
+    }
+  ];
+
+  const sendMessage = async () => {
+    if (!inputMessage.trim()) return;
+
+    const userMessage = {
+      id: messages.length + 1,
+      text: inputMessage.trim(),
+      sender: 'user',
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsLoading(true);
+
+    try {
+      console.log('🚀 Sending message to chatbot:', userMessage.text);
+
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.CHATBOT_CHAT_LOCAL), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ message: userMessage.text })
+      });
+
+      const data = await response.json();
+      console.log('📥 Chatbot response:', data);
+
+      if (data.success) {
+        const botMessage = {
+          id: messages.length + 2,
+          text: data.reply,
+          sender: 'bot',
+          timestamp: new Date(),
+          sources: data.sources,
+        };
+        setMessages(prev => [...prev, botMessage]);
+      } else {
+        throw new Error(data.message || 'Failed to get response');
+      }
+    } catch (error) {
+      console.error('Chatbot error:', error);
+      const errorMessage = {
+        id: messages.length + 2,
+        text: 'Sorry, I encountered an error. Please try again or contact support.',
+        sender: 'bot',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  };
+
+  const pickAndSendImage = async () => {
+    if (isLoading) return;
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.7,
+      });
+
+      if (result.canceled || !result.assets || result.assets.length === 0) return;
+
+      const asset = result.assets[0];
+      const caption = inputMessage.trim();
+
+      const userMessage = {
+        id: Date.now(),
+        text: caption,
+        imageUri: asset.uri,
+        sender: 'user',
+        timestamp: new Date(),
+      };
+
+      setMessages(prev => [...prev, userMessage]);
+      setInputMessage('');
+      setIsLoading(true);
+
+      const formData = new FormData();
+      if (caption) formData.append('message', caption);
+      formData.append('image', {
+        uri: asset.uri,
+        name: asset.fileName || asset.name || 'photo.jpg',
+        type: asset.mimeType || asset.type || 'image/jpeg',
+      });
+
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.CHATBOT_ANALYZE_IMAGE_LOCAL), {
+        method: 'POST',
+        // Don't set Content-Type for multipart/form-data; fetch will set boundary.
+        body: formData,
+      });
+
+      const data = await response.json();
+      console.log('📥 Image analysis response:', data);
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Failed to analyze image');
+      }
+
+      const botMessage = {
+        id: Date.now() + 1,
+        text: data.reply,
+        sender: 'bot',
+        timestamp: new Date(),
+        sources: data.sources,
+      };
+      setMessages(prev => [...prev, botMessage]);
+    } catch (error) {
+      console.error('Image chatbot error:', error);
+      const errorMessage = {
+        id: Date.now() + 2,
+        text: 'Sorry, I could not analyze that image. Please try again (and make sure Ollama vision model is installed).',
+        sender: 'bot',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  };
+
+  const supportOptions = [
+    {
+      title: 'Chatbot',
+      icon: '🤖',
+      description: 'Chat with our AI assistant',
+      action: () => setShowChatbot(true)
+    },
+    {
+      title: 'Call Support',
+      icon: '📞',
+      description: 'Call our support hotline',
+      action: () => Linking.openURL('tel:+923001234567')
+    },
+    {
+      title: 'Email Support',
+      icon: '📧',
+      description: 'Send us an email',
+      action: () => Linking.openURL('mailto:support@homeease.com')
+    },
+    {
+      title: 'WhatsApp',
+      icon: '📱',
+      description: 'Message us on WhatsApp',
+      action: () => Linking.openURL('whatsapp://send?phone=923001234567&text=Hello, I need help with HomeEase')
+    }
+  ];
+
+  const helpResources = [
+    {
+      title: 'User Guide',
+      icon: '📖',
+      description: 'Learn how to use the app',
+      action: () => Alert.alert('User Guide', 'User guide will be available soon!')
+    },
+    {
+      title: 'Privacy Policy',
+      icon: '🔒',
+      description: 'Read our privacy policy',
+      action: () => Alert.alert('Privacy Policy', 'Privacy policy will be available soon!')
+    },
+    {
+      title: 'Terms of Service',
+      icon: '📋',
+      description: 'Read our terms of service',
+      action: () => Alert.alert('Terms of Service', 'Terms of service will be available soon!')
+    },
+    {
+      title: 'Report Issue',
+      icon: '⚠️',
+      description: 'Report a bug or issue',
+      action: () => Alert.alert('Report Issue', 'Issue reporting feature coming soon!')
+    }
+  ];
+
+  const renderFAQ = (faq) => (
+    <View key={faq.id} style={{
+      backgroundColor: theme.card,
+      borderRadius: 12,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: theme.border,
+      overflow: 'hidden'
+    }}>
+      <TouchableOpacity
+        onPress={() => setExpandedFAQ(expandedFAQ === faq.id ? null : faq.id)}
+        style={{
+          padding: 16,
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}
+      >
+        <Text style={{
+          flex: 1,
+          fontSize: 14,
+          fontWeight: '600',
+          color: theme.textDark,
+          fontFamily: Fonts.subheading
+        }}>
+          {faq.question}
+        </Text>
+        <Text style={{
+          fontSize: 16,
+          color: theme.primary,
+          transform: [{ rotate: expandedFAQ === faq.id ? '180deg' : '0deg' }]
+        }}>
+          ▼
+        </Text>
+      </TouchableOpacity>
+      
+      {expandedFAQ === faq.id && (
+        <View style={{
+          paddingHorizontal: 16,
+          paddingBottom: 16,
+          borderTopWidth: 1,
+          borderTopColor: theme.border
+        }}>
+          <Text style={{
+            fontSize: 13,
+            color: theme.textLight,
+            lineHeight: 20,
+            fontFamily: Fonts.body
+          }}>
+            {faq.answer}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+
+  const renderSupportOption = (option) => (
+    <TouchableOpacity
+      key={option.title}
+      onPress={option.action}
+      style={{
+        backgroundColor: theme.card,
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 8,
+        borderWidth: 1,
+        borderColor: theme.border,
+        shadowColor: theme.textDark,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Text style={{ fontSize: 24, marginRight: 12 }}>{option.icon}</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={{
+            fontSize: 16,
+            fontWeight: '600',
+            color: theme.textDark,
+            fontFamily: Fonts.subheading
+          }}>
+            {option.title}
+          </Text>
+          <Text style={{
+            fontSize: 13,
+            color: theme.textLight,
+            fontFamily: Fonts.body
+          }}>
+            {option.description}
+          </Text>
+        </View>
+        <Text style={{ color: theme.primary, fontSize: 16 }}>→</Text>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderHelpResource = (resource) => (
+    <TouchableOpacity
+      key={resource.title}
+      onPress={resource.action}
+      style={{
+        backgroundColor: theme.card,
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 8,
+        borderWidth: 1,
+        borderColor: theme.border,
+        shadowColor: theme.textDark,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Text style={{ fontSize: 24, marginRight: 12 }}>{resource.icon}</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={{
+            fontSize: 16,
+            fontWeight: '600',
+            color: theme.textDark,
+            fontFamily: Fonts.subheading
+          }}>
+            {resource.title}
+          </Text>
+          <Text style={{
+            fontSize: 13,
+            color: theme.textLight,
+            fontFamily: Fonts.body
+          }}>
+            {resource.description}
+          </Text>
+        </View>
+        <Text style={{ color: theme.primary, fontSize: 16 }}>→</Text>
+      </View>
+    </TouchableOpacity>
+  );
+
+  if (showChatbot) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+        {/* Chatbot Header */}
+        <View style={{
+          backgroundColor: theme.card,
+          paddingTop: 45,
+          paddingBottom: 16,
+          paddingHorizontal: 24,
+          borderBottomWidth: 1,
+          borderBottomColor: theme.border,
+          flexDirection: 'row',
+          alignItems: 'center',
+        }}>
+          <TouchableOpacity onPress={() => setShowChatbot(false)} style={{ marginRight: 12 }}>
+            <Ionicons name="arrow-back" size={24} color={theme.textDark} />
+          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.textDark, fontFamily: Fonts.heading }}>
+              Chatbot Assistant
+            </Text>
+            <Text style={{ fontSize: 12, color: theme.textLight, fontFamily: Fonts.caption }}>
+              Powered by Homeease
+            </Text>
+          </View>
+          <View style={{
+            backgroundColor: '#10B981',
+            width: 10,
+            height: 10,
+            borderRadius: 5,
+          }} />
+        </View>
+
+        <KeyboardAvoidingView 
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        >
+          {/* Messages */}
+          <ScrollView
+            ref={scrollViewRef}
+            style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
+            contentContainerStyle={{ paddingBottom: 20 }}
+            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+          >
+            {messages.map((message) => (
+              <View
+                key={message.id}
+                style={{
+                  marginBottom: 12,
+                  alignSelf: message.sender === 'user' ? 'flex-end' : 'flex-start',
+                  maxWidth: '80%',
+                }}
+              >
+                <View style={{
+                  backgroundColor: message.sender === 'user' ? theme.primary : theme.card,
+                  borderRadius: 16,
+                  padding: 12,
+                  borderWidth: message.sender === 'bot' ? 1 : 0,
+                  borderColor: theme.border,
+                }}>
+                  {message.imageUri && (
+                    <Image
+                      source={{ uri: message.imageUri }}
+                      style={{
+                        width: 220,
+                        height: 220,
+                        borderRadius: 12,
+                        marginBottom: message.text ? 10 : 0,
+                        backgroundColor: theme.background,
+                      }}
+                      resizeMode="cover"
+                    />
+                  )}
+                  {!!message.text && (
+                    <Text style={{
+                      fontSize: 14,
+                      color: message.sender === 'user' ? '#FFFFFF' : theme.textDark,
+                      fontFamily: Fonts.body,
+                      lineHeight: 20,
+                    }}>
+                      {message.text}
+                    </Text>
+                  )}
+                  {message.sources && message.sources.length > 0 && (
+                    <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: theme.border }}>
+                      <Text style={{ fontSize: 10, color: theme.textLight, fontFamily: Fonts.caption }}>
+                        Sources: {message.sources.map(s => s.category).join(', ')}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={{
+                  fontSize: 10,
+                  color: theme.textLight,
+                  marginTop: 4,
+                  marginLeft: message.sender === 'user' ? 0 : 8,
+                  marginRight: message.sender === 'user' ? 8 : 0,
+                  textAlign: message.sender === 'user' ? 'right' : 'left',
+                  fontFamily: Fonts.caption,
+                }}>
+                  {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+              </View>
+            ))}
+            {isLoading && (
+              <View style={{
+                alignSelf: 'flex-start',
+                backgroundColor: theme.card,
+                borderRadius: 16,
+                padding: 12,
+                borderWidth: 1,
+                borderColor: theme.border,
+                marginBottom: 12,
+              }}>
+                <ActivityIndicator size="small" color={theme.primary} />
+              </View>
+            )}
+          </ScrollView>
+
+          {/* Input Area */}
+          <View style={{
+            backgroundColor: theme.card,
+            borderTopWidth: 1,
+            borderTopColor: theme.border,
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+          }}>
+            <TouchableOpacity
+              onPress={pickAndSendImage}
+              disabled={isLoading}
+              style={{
+                backgroundColor: !isLoading ? theme.background : theme.border,
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                justifyContent: 'center',
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: theme.border,
+                marginRight: 8,
+              }}
+            >
+              <Ionicons name="image" size={20} color={!isLoading ? theme.textDark : theme.textLight} />
+            </TouchableOpacity>
+            <TextInput
+              style={{
+                flex: 1,
+                backgroundColor: theme.background,
+                borderRadius: 20,
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                fontSize: 14,
+                color: theme.textDark,
+                fontFamily: Fonts.body,
+                borderWidth: 1,
+                borderColor: theme.border,
+                marginRight: 8,
+              }}
+              placeholder="Type your message..."
+              placeholderTextColor={theme.textLight}
+              value={inputMessage}
+              onChangeText={setInputMessage}
+              multiline
+              maxLength={500}
+              editable={!isLoading}
+            />
+            <TouchableOpacity
+              onPress={sendMessage}
+              disabled={!inputMessage.trim() || isLoading}
+              style={{
+                backgroundColor: inputMessage.trim() && !isLoading ? theme.primary : theme.border,
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <Ionicons 
+                name="send" 
+                size={20} 
+                color={inputMessage.trim() && !isLoading ? '#FFFFFF' : theme.textLight} 
+              />
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+      {/* Header */}
+      <View style={{
+        backgroundColor: theme.card,
+        paddingTop: 45,
+        paddingBottom: 16,
+        paddingHorizontal: 24,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.border,
+        flexDirection: 'row',
+        alignItems: 'center',
+      }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 12 }}>
+          <Ionicons name="arrow-back" size={24} color={theme.textDark} />
+        </TouchableOpacity>
+        <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.textDark, fontFamily: Fonts.heading }}>
+          Support
+        </Text>
+      </View>
+      <ScrollView style={{ flex: 1, paddingHorizontal: 20 }}>
+        {/* Contact Support */}
+        <View style={{ marginTop: 20, marginBottom: 24 }}>
+          <Text style={{
+            fontSize: 18,
+            fontWeight: 'bold',
+            color: theme.textDark,
+            marginBottom: 12,
+            paddingbottom: 10,
+            fontFamily: Fonts.heading
+          }}>
+            Contact Support
+          </Text>
+          {supportOptions.map(renderSupportOption)}
+        </View>
+
+        {/* Help Resources */}
+        <View style={{ marginBottom: 24 }}>
+          <Text style={{
+            fontSize: 18,
+            fontWeight: 'bold',
+            color: theme.textDark,
+            marginBottom: 12,
+            fontFamily: Fonts.heading
+          }}>
+            Help Resources
+          </Text>
+          {helpResources.map(renderHelpResource)}
+        </View>
+
+        {/* FAQ */}
+        <View style={{ marginBottom: 24 }}>
+          <Text style={{
+            fontSize: 18,
+            fontWeight: 'bold',
+            color: theme.textDark,
+            marginBottom: 12,
+            fontFamily: Fonts.heading
+          }}>
+            Frequently Asked Questions
+          </Text>
+          {faqs.map(renderFAQ)}
+        </View>
+
+        {/* App Info */}
+        <View style={{
+          backgroundColor: theme.card,
+          borderRadius: 12,
+          padding: 16,
+          marginBottom: 24,
+          borderWidth: 1,
+          borderColor: theme.border
+        }}>
+          <Text style={{
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: theme.textDark,
+            marginBottom: 8,
+            fontFamily: Fonts.subheading
+          }}>
+            App Information
+          </Text>
+          <Text style={{
+            fontSize: 13,
+            color: theme.textLight,
+            fontFamily: Fonts.body,
+            marginBottom: 4
+          }}>
+            Version: 1.0.0
+          </Text>
+          <Text style={{
+            fontSize: 13,
+            color: theme.textLight,
+            fontFamily: Fonts.body,
+            marginBottom: 4
+          }}>
+            Build: 2024.1.1
+          </Text>
+          <Text style={{
+            fontSize: 13,
+            color: theme.textLight,
+            fontFamily: Fonts.body
+          }}>
+            © 2024 HomeEase. All rights reserved.
+          </Text>
+        </View>
+
+        <View style={{ height: 20 }} />
+      </ScrollView>
+    </SafeAreaView>
+  );
+} 
